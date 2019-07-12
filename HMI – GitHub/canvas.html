@@ -183,21 +183,24 @@ function WebSocketTest() {
                ws.onopen = function() { 
 			   alert('a');
                   // Web Socket is connected, send data using send()
-                  ws.send('Ping');
-                  alert("Message is sent...");
+                  //ws.send('Ping');
+                  //alert("Message is sent...");
                };
               ws.onmessage = function (evt) { 
                  var received_msg = evt.data;
-				 testStr = evt.data;
-                 alert("Message is received...");
+				 recieved = evt.data;
+				 read == 1;
+                 //alert("Message is received...");
               };
               ws.onclose = function() { 
                  // websocket is closed.
-                 alert("Connection is closed..."); 
+                 alert("Connection is closed...");
+				 read == 0;				 
               };
            } else {
               // The browser doesn't support WebSocket
               alert("WebSocket NOT supported by your Browser!");
+			  read == 0;
            }
         }
 
@@ -228,6 +231,7 @@ var readSpeed, readOdo, readOdoTotal, readOutsideTemp, readButton1;
 var readTacho, readGear, readInsideTemp, readCoolingTemp, readButtonTacho, readButtonTemp;
 
 
+var recieved, read;
 
 //basic
 function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight;}
@@ -263,7 +267,8 @@ function drawCanvasBasics(){
 }
 
 function calcVIP(){
-	testStr = "a|41|a|25|a|2|";
+	//testStr = "a|41|a|25|a|2|";
+	testStr = recieved;
 	var speed = getSubStr(testStr, '|');
 	var temp = getSubStr(testStr, '|');
 	var button = getSubStr(testStr, '|');
@@ -367,7 +372,7 @@ function calculateElements(){
 }
 function getInputs(){
 	//чете стринг от сървър и въвежда стойностите
-	if(testPrompt == 1){
+	if(testPrompt == 1 && read==0){
 		readSpeed = document.getElementById('input').value;
 		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
 		readTacho = document.getElementById('inputTacho').value;
@@ -382,7 +387,7 @@ function getInputs(){
 		readCoolingTemp = document.getElementById('inputCoolTemp').value;
 		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
 		
-	}else if(testPrompt == 0){
+	}else if(testPrompt == 0 && read==1){
 		if(elapsedTimeTest()==1){
 			calcVIP();
 			/*testStr = "a|41|a|25|a|2|";
