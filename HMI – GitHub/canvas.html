@@ -7,6 +7,8 @@
 <style>
 #cluster{
 	border:2px solid #000;
+	position:absolute;
+	left:0%;
 }
 .element{
 	visibility:hidden;
@@ -43,7 +45,7 @@
         <a href = "javascript:WebSocketTest()">Run WebSocket</a>
      </div>
     <p></p>Button Test<button onClick="testButton(0)">Speed</button><button onClick="testButton(1)">Temp</button><button onClick="testButton(2)">NullOdo</button><button onClick="testButtonTacho(1)">Tacho</button><button onClick="testButtonTemp(1)">TempOtbor2</button><button onClick="testStrings()">testString</button><button onClick="stressTest()">Stress Test</button><button onClick="readVIP()">Read From VIP</button></div><button id="hideButton" onclick="hideAll()">Hide all</button>
-     
+     <p></p>
 	<canvas id="cluster">
     	this is a cluster.
     </canvas>
@@ -372,7 +374,7 @@ function calculateElements(){
 }
 function getInputs(){
 	//чете стринг от сървър и въвежда стойностите
-	if(testPrompt == 1 && read==0){
+	if(testPrompt == 1 || read==0){
 		readSpeed = document.getElementById('input').value;
 		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
 		readTacho = document.getElementById('inputTacho').value;
@@ -387,23 +389,10 @@ function getInputs(){
 		readCoolingTemp = document.getElementById('inputCoolTemp').value;
 		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
 		
-	}else if(testPrompt == 0 && read==1){
+	}else if(testPrompt == 0 || read==1){
 		if(elapsedTimeTest()==1){
-			calcVIP();
-			/*testStr = "a|41|a|25|a|2|";
-			var speed = getSubStr(testStr, '|');
-			var temp = getSubStr(testStr, '|');
-			var button = getSubStr(testStr, '|');
-			readSpeed = speed;
-			alert(readSpeed);
-			if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
-			readOutsideTemp = temp
-			alert(temp);
-			buttonPrompt = button;
-			alert(button);
-			readOutsideTemp(buttonPrompt);
-			alert(readOutsideTemp);*/
-			//readSpeed = Math.round(rand(0,260));
+			//calcVIP();
+			readSpeed = Math.round(rand(0,260));
 			if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
 			readTacho = Math.round(rand(0,7500));
 			if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
@@ -413,10 +402,9 @@ function getInputs(){
 			if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
 			readGear = Math.round(rand(0,7));
 			readInsideTemp = Math.round(rand(-30,90));
-			//readOutsideTemp = Math.round(rand(-30,90));
+			readOutsideTemp = Math.round(rand(-30,90));
 			readCoolingTemp = Math.round(rand(50,130));
 			if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
-			
 		}
 		if(show == 0){
 			show = 1;
