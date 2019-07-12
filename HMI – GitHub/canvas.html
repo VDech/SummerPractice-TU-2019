@@ -1259,6 +1259,9 @@ function displayGear(input){
 		if(input == 7){
 			input = "R";	
 		}
+		if(input == 0){
+			input == "N";	
+		}
 	}
     	ctx.font = gearFontNum.toString()+"px "+fontFam;
 		ctx.fillText(input ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.81, gearW+gearW*0.7272, gearH*0.46);
