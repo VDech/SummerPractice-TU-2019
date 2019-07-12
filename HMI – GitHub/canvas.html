@@ -40,11 +40,11 @@
     Outside Temp: <input id="inputOtTemp" class="inputVal">
     Cooling Temp: <input id="inputCoolTemp" type="number" class="inputVal">
     Inside Temp: <input id="inputInTemp" class="inputVal">
-    </div>
 	<div id = "sse">
         <a href = "javascript:WebSocketTest()">Run WebSocket</a>
      </div>
-    <p></p>Button Test<button onClick="testButton(0)">Speed</button><button onClick="testButton(1)">Temp</button><button onClick="testButton(2)">NullOdo</button><button onClick="testButtonTacho(1)">Tacho</button><button onClick="testButtonTemp(1)">TempOtbor2</button><button onClick="testStrings()">testString</button><button onClick="stressTest()">Stress Test</button><button onClick="readVIP()">Read From VIP</button></div><button id="hideButton" onclick="hideAll()">Hide all</button>
+    </div>
+    <div id="butTestText">Button Test</div><button onClick="testButton(0)">Speed</button><button onClick="testButton(1)">Temp</button><button onClick="testButton(2)">NullOdo</button><button onClick="testButtonTacho(1)">Tacho</button><button onClick="testButtonTemp(1)">TempOtbor2</button><button onClick="testStrings()">testString</button><button onClick="stressTest()">Stress Test</button><button onClick="readVIP()">Read From VIP</button></div><button id="hideButton" onclick="hideAll()">Hide all</button>
      <p></p>
 	<canvas id="cluster">
     	this is a cluster.
@@ -1301,15 +1301,21 @@ function elapsedTimeTacho(){
 }
 function stressTest(){
 	var x = document.getElementsByClassName('inputVal');
+	var body = document.getElementsByTagName('body')[0];
+	var text = document.getElementById('butTestText');
 	var i = 0;
 	if(testPrompt == 1){
 		for(i=0;i<x.length;i++){
 			x[i].style.display = "none";
+			body.style.background="#000";
+			text.style.color = "#FFF";
 		}
 		testPrompt = 0;
 	}else if(testPrompt == 0){
 		for(i=0;i<x.length;i++){
 			x[i].style.display = "inline";
+			body.style.background="#FFF";
+			text.style.color = "#000";
 		}
 		show = 0;
 		testPrompt = 1;
@@ -1364,9 +1370,6 @@ function elapsedTimeTest(){
 
 
 requestAnimationFrame(update);
-
-//направи клиентелско-сървърна връзка с back-end-а
-//евентуално: почисти малко кода
 </script>
 
 </html>
