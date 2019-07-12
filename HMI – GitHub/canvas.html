@@ -1,0 +1,1379 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cluster</title>
+</head>
+<style>
+#cluster{
+	border:2px solid #000;
+}
+.element{
+	visibility:hidden;
+	position:relative;
+	top: -30px; 
+	width:0px;
+	height:0px;
+	border:1px solid #000;
+}
+.inputVal{
+	display:inline;
+}
+#buttonVal{
+	display:inline;
+}
+#hideButton{
+	background-color: #f1f1f1;
+	color: black;
+	border: 2px solid #000;
+}
+</style>
+
+<body>
+	<div id="buttonVal">
+    <div class="inputVal">Move Speed Arrow to: <input id="input" class="inputVal">
+    Move Tacho Arrow to: <input id="inputTacho"  class="inputVal">
+    Gear: <input id="inputGear" class="inputVal">
+    Odometer: <input id="inputOdo" class="inputVal"> Total:<input id="inputTotalOdo" class="inputVal"><p></p>
+    Outside Temp: <input id="inputOtTemp" class="inputVal">
+    Cooling Temp: <input id="inputCoolTemp" type="number" class="inputVal">
+    Inside Temp: <input id="inputInTemp" class="inputVal">
+    </div>
+	<div id = "sse">
+        <a href = "javascript:WebSocketTest()">Run WebSocket</a>
+     </div>
+    <p></p>Button Test<button onClick="testButton(0)">Speed</button><button onClick="testButton(1)">Temp</button><button onClick="testButton(2)">NullOdo</button><button onClick="testButtonTacho(1)">Tacho</button><button onClick="testButtonTemp(1)">TempOtbor2</button><button onClick="testStrings()">testString</button><button onClick="stressTest()">Stress Test</button><button onClick="readVIP()">Read From VIP</button></div><button id="hideButton" onclick="hideAll()">Hide all</button>
+     
+	<canvas id="cluster">
+    	this is a cluster.
+    </canvas>
+    <img id="speedBG" class="element" src="skorostomer/skorostomerbg.png"/>
+    <img id="speedNumKM" class="element" src="skorostomer/skorostomernum.png"/>
+    <img id="speedNumMPH" class="element" src="skorostomer/skorostomernumMPH.png"/>
+    <img id="speedMid" class="element" src="skorostomer/skorostomermid.png"/>
+    <img id="BG" class="element" src="bg.png"/>
+	<img id="over" class="element" src="over.png"/>
+	<img id="shadow" class="element" src="shadow.png"/>
+    <img id="tachoBG" class="element" src="tachomer/tachometerbg.png"/>
+    <img id="tachoNumTDI" class="element" src="tachomer/tachometerNumTDI.png"/>
+    <img id="tachoNumBen" class="element" src="tachomer/tachometerNum.png"/>
+    <img id="tachoMid" class="element" src="skorostomer/skorostomermid.png"/>
+    <img id="speedRing" class="element" src="skorostomer/skorostomerRing.png"/>
+	<img id="speedGlass" class="element" src="skorostomer/skorostomerEffect.png"/>
+    <img id="speedArrow" class="element" src="skorostomer/skorostomermidarrow.png"/>
+    <img id="gear" class="element" src="gear/gear.png" />
+	<img id="gearGlass" class="element" src="gear/gearGlass.png" />
+    <img id="odometerKM" class="element" src="odometer/odometerKM.png" />
+    <img id="odometerMPH" class="element" src="odometer/odometerMPH.png" />
+	<img id="odometerGlass" class="element" src="odometer/odometerGlass.png" />
+    <img id="outsideTemp" class="element" src="outsideTemp/outsideTemp.png" />
+    <img id="insideTemp" class="element" src="outsideTemp/insideTemp.png" />
+    <img id="tempGlass" class="element" src="outsideTemp/tempEffect.png" />
+    <img id="coolingTempBG" class="element" src="coolingTemp/coolingTempBG.png" />
+    <img id="coolingTempBar" class="element" src="coolingTemp/coolingTempBar.png" />
+    <img id="coolingTempIndic" class="element" src="coolingTemp/coolingTempIn.png" />
+	<img id="coolingTempGlass" class="element" src="coolingTemp/coolingTempЕffect.png" />
+</body>
+
+<script type="text/javascript">
+//<button id="changeSpeed" onClick="changeUnitSpeed()"> Change Speed: </button>
+var canvas = document.getElementById("cluster");
+var ctx = canvas.getContext("2d");
+var wRatio = 0.95;
+var hRatio = 0.90;
+
+canvas.width = window.innerWidth * wRatio;
+canvas.height = window.innerHeight * hRatio;
+var smoothing = 100;
+var lastUpdate = new Date().getTime();
+var lastUpdateTacho = new Date().getTime();
+var fontFam = 'verdana';
+var timeConst = 7.5; //miliseconds
+
+//test
+var buttonPrompt = 3;
+var buttonTacho = 0;
+var buttonTemp = 0;
+function testButton(int){
+	if(int > 3 && int < 0){int = 3;}
+	buttonPrompt = int;
+	//alert(buttonPrompt);	
+}
+function testButtonTacho(int){
+	buttonTacho = int;
+	//alert(buttonPrompt);	
+}
+function testButtonTemp(int){
+	buttonTemp = int;
+	//alert(buttonPrompt);	
+}
+//speedConst
+var tempValue = 0;
+var tempSleepVal = 0;
+var curValue = 0;
+var sleepConst = 500;
+var unitKM = 1;
+var curUnitKM = 1;
+var failsafeSpeed = 0;
+var isValidSpeed = 0;
+
+//tachoConst
+var tempSleepValTach = 0;
+var tempValueTach = 0;
+var curValueTach = 0;
+var unitBen = 1;
+var curUnitBen = 1;
+var failsafeTacho = 0;
+var isValidTacho = 0;
+
+
+//arrows
+var speedArrow = new Image;
+speedArrow.src = "skorostomer/skorostomermidarrow.png";
+var tachArrow = new Image;
+tachArrow.src = "skorostomer/skorostomermidarrow.png";
+
+//odometerConst
+var totalOdo = 0;
+var curOdo = 123;
+var failsafeOdo = 0;
+var failOdo = 0;
+var failOdoTot = 0;
+//coolingTempConst
+var curCoolingTemp = 50;
+var failsafeCoolingTemp = 50;
+var coolingCoef = 0.3;
+
+//temp
+var tempUnit = 'C';
+var tempUnitInside = 'F';
+var tempGrow = 1;
+var tempTemp = 0;
+var curTemp = 0;
+var unitTemp = 0;
+var curUnitTemp = 0;
+var unitTempIn = 0;
+var curUnitTempIn = 0;
+
+//sizeConst
+var odoW, odoH, odoFont;
+var gaigeW, gaigeFont;
+var gearW, gearH, gearFont, gearFontNum;
+var coolW, coolH;
+var tempW, tempH, tempFont;
+var w,h;
+
+//
+var hidePrompt = 0;
+var testPrompt = 1;
+var readPrompt = 0;
+var show = 1;
+var lastTest = 1;
+var lastUpdateTest = new Date().getTime();
+
+//it hurts when IP
+function WebSocketTest() {
+      if ("WebSocket" in window) {
+            alert("WebSocket is supported by your Browser!");
+               // Let us open a web socket
+               var ws = new WebSocket("ws://localhost:9998/echo");
+			   ws.onerror = function() {
+				alert('error');   
+			   }
+               ws.onopen = function() { 
+			   alert('a');
+                  // Web Socket is connected, send data using send()
+                  ws.send('Ping');
+                  alert("Message is sent...");
+               };
+              ws.onmessage = function (evt) { 
+                 var received_msg = evt.data;
+				 testStr = evt.data;
+                 alert("Message is received...");
+              };
+              ws.onclose = function() { 
+                 // websocket is closed.
+                 alert("Connection is closed..."); 
+              };
+           } else {
+              // The browser doesn't support WebSocket
+              alert("WebSocket NOT supported by your Browser!");
+           }
+        }
+
+var testStr = "Speed|41|Temp|22|Button1|1|"; 
+function testStrings(){
+	var speed = getSubStr(testStr, '|');
+	var temp = getSubStr(testStr, '|');
+	var button = getSubStr(testStr, '|');
+	alert(testStr);
+	alert(speed);
+	alert(temp);
+	alert(button);
+}
+function getSubStr(str, delim) {
+    var a = str.indexOf(delim);
+    if (a == -1)
+       return '';
+    var b = str.indexOf(delim, a+1);
+    if (b == -1)
+       return '';
+	testStr = str.substring(b + 1);
+	//alert(str);
+    return str.substr(a+1, b-a-1);
+    //                 ^    ^- length = gap between delimiters
+    //                 |- start = just after the first delimiter
+}
+var readSpeed, readOdo, readOdoTotal, readOutsideTemp, readButton1;
+var readTacho, readGear, readInsideTemp, readCoolingTemp, readButtonTacho, readButtonTemp;
+
+
+
+//basic
+function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight;}
+resize();
+window.addEventListener("resize",resize);
+window.onload = function() {
+	 document.getElementById("input").value=0;
+	 document.getElementById("inputTacho").value=0;
+	 document.getElementById('inputOdo').value = 0;
+	 document.getElementById('inputTotalOdo').value = 0;
+	 document.getElementById('inputCoolTemp').value = 50;
+	 document.getElementById('inputOtTemp').value = 1;
+	 document.getElementById('inputInTemp').value = 0;
+	 document.getElementById('inputGear').value = 0;
+	 calculateElements();
+	 drawCanvasBasics();	
+};
+function drawBG(){
+	 var bg = document.getElementById("BG");
+	 ctx.drawImage(bg, 0, 0, w, h);
+	 
+}
+function drawOver(){
+	// var shadow = document.getElementById("shadow");
+	 //ctx.drawImage(shadow, 0, 0, w, h);
+	 var over = document.getElementById("over");
+	 ctx.drawImage(over, 0, 0, w, h);
+}
+function drawCanvasBasics(){
+	 drawBG();
+	 drawSpeedometer();
+	 drawTachometer();
+}
+
+function calcVIP(){
+	testStr = "a|41|a|25|a|2|";
+	var speed = getSubStr(testStr, '|');
+	var temp = getSubStr(testStr, '|');
+	var button = getSubStr(testStr, '|');
+	readSpeed = speed;
+	readOutsideTemp = temp;
+	buttonPrompt = button;
+}
+
+function update(){	
+    var ihM,iwM, ihMTc, iwMTc;
+	calculateElements();
+	getInputs();
+	ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,w,h);
+	drawBG();
+    if(speedArrow.complete){
+      var iw = speedArrow.width;
+      var ih = speedArrow.height;
+	  var spr = sprites[0];
+	  var rot;
+	  if(checkUnitsKM() == 1){
+		  rot = calcRotationKM(readSpeed);
+		  spr.r = rot *(Math.PI/180);
+		  spr.xr = ((spr.x % iwM) + iwM) % iwM - iw * spr.scale;
+		  spr.yr = ((spr.y % ihM) + ihM) % ihM - ih * spr.scale;
+		  drawArrowSpeedKM(speedArrow,spr);
+		  checkOdo(readOdo, readOdoTotal);
+		  displayOdometerKM(readOdo, readOdoTotal);
+	  }else{
+		  rot = calcRotationMPH(readSpeed);
+		  spr.r = rot *(Math.PI/180);
+		  spr.xr = ((spr.x % iwM) + iwM) % iwM - iw * spr.scale;
+		  spr.yr = ((spr.y % ihM) + ihM) % ihM - ih * spr.scale;
+		  drawArrowSpeedMPH(speedArrow,spr);
+		  checkOdo(readOdo, readOdoTotal);
+		  displayOdometerMPH(readOdo, readOdoTotal);
+	  }
+    }  
+	if(tachArrow.complete){
+	  var iw = tachArrow.width;
+      var ih = tachArrow.height;
+	  var spr = spritesTacho[0];
+	  var rot;
+	  if(checkEngine() == 1){
+		  rot = calcRotationBen(readTacho);
+		  spr.r = rot *(Math.PI/180);
+		  spr.xr = ((spr.x % iwMTc) + iwMTc) % iwMTc - iw * spr.scale;
+		  spr.yr = ((spr.y % ihMTc) + ihMTc) % ihMTc - ih * spr.scale;
+		  drawArrowTachoBen(tachArrow,spr);
+	  }else{
+		  rot = calcRotationTDI(readTacho);
+		  spr.r = rot *(Math.PI/180);
+		  spr.xr = ((spr.x % iwMTc) + iwMTc) % iwMTc - iw * spr.scale;
+		  spr.yr = ((spr.y % ihMTc) + ihMTc) % ihMTc - ih * spr.scale;
+		  drawArrowTachoTDI(tachArrow,spr);
+	  }
+	}
+	var cool = calcCoolingTemp(readCoolingTemp);
+	displayCoolingTemp(cool);
+	displayGear(readGear);
+	if(checkUnitsTemp() == 1){
+		tempUnit = 'F';
+		displayOutsideTempFahr(readOutsideTemp);
+	}else{
+		tempUnit = 'C';
+		displayOutsideTempCelsius(readOutsideTemp);
+	}
+	if(checkUnitsTempInside() == 1){
+		tempUnitInside = 'F';
+		displayInsideTempFahr(readInsideTemp);
+	}else{
+		tempUnitInside = 'C';
+		displayInsideTempCelsius(readInsideTemp);
+	}
+	drawOver();
+	displayWindowSize();
+    requestAnimationFrame(update);
+	
+} 
+function displayWindowSize(){
+	ctx.fillStyle = '#FFF';
+    ctx.font = '10px sans-serif';
+	ctx.fillText(canvas.width, 30, 20);
+	ctx.fillText(canvas.height, 30, 30);
+}
+function calculateElements(){
+	odoW = Math.round(0.1505*w);	
+	odoH = Math.round(0.1821*h);
+	odoFont = Math.round(0.0237*w);
+	gaigeFont = Math.round(0.034*w);
+	gaigeW = Math.round(0.3343*w);
+	gearW = Math.round(0.1337*w);
+	gearH = Math.round(0.1989*h);
+	gearFont = Math.round(0.0187*w);
+	gearFontNum = Math.round(0.0301*w);
+	coolW = Math.round(0.2173*w);
+	coolH = Math.round(0.0928*h);
+	tempW = Math.round(0.1706*w);
+	tempH = Math.round(0.0862*h);
+	tempFont = Math.round(0.0167*w)
+}
+function getInputs(){
+	//чете стринг от сървър и въвежда стойностите
+	if(testPrompt == 1){
+		readSpeed = document.getElementById('input').value;
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readTacho = document.getElementById('inputTacho').value;
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = document.getElementById('inputOdo').value;
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = document.getElementById('inputTotalOdo').value;
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = document.getElementById('inputGear').value;
+		readInsideTemp = document.getElementById('inputInTemp').value;
+		readOutsideTemp = document.getElementById('inputOtTemp').value;
+		readCoolingTemp = document.getElementById('inputCoolTemp').value;
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+		
+	}else if(testPrompt == 0){
+		if(elapsedTimeTest()==1){
+			calcVIP();
+			/*testStr = "a|41|a|25|a|2|";
+			var speed = getSubStr(testStr, '|');
+			var temp = getSubStr(testStr, '|');
+			var button = getSubStr(testStr, '|');
+			readSpeed = speed;
+			alert(readSpeed);
+			if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+			readOutsideTemp = temp
+			alert(temp);
+			buttonPrompt = button;
+			alert(button);
+			readOutsideTemp(buttonPrompt);
+			alert(readOutsideTemp);*/
+			//readSpeed = Math.round(rand(0,260));
+			if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+			readTacho = Math.round(rand(0,7500));
+			if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+			readOdo = Math.round(rand(0,5000));
+			if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+			readOdoTotal = Math.round(rand(0,5000));
+			if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+			readGear = Math.round(rand(0,7));
+			readInsideTemp = Math.round(rand(-30,90));
+			//readOutsideTemp = Math.round(rand(-30,90));
+			readCoolingTemp = Math.round(rand(50,130));
+			if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+			
+		}
+		if(show == 0){
+			show = 1;
+			document.getElementById('input').value = readSpeed;
+			document.getElementById('inputTacho').value = readTacho;
+			document.getElementById('inputOdo').value = readOdo;
+			document.getElementById('inputTotalOdo').value = readOdoTotal;
+			document.getElementById('inputGear').value = readGear;
+			document.getElementById('inputInTemp').value = readInsideTemp;
+			document.getElementById('inputOtTemp').value = readOutsideTemp;
+			document.getElementById('inputCoolTemp').value = readCoolingTemp;	
+		}
+	/*}else if(readPrompt == 1 && testPrompt == 2){
+		var speed = getSubStr(testStr, '|');
+		var temp = getSubStr(testStr, '|');
+		var button = getSubStr(testStr, '|');
+		readSpeed = speed
+		alert(readSpeed);
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readOutsideTemp = temp
+		alert(temp);
+		buttonPrompt = button;
+		alert(button);
+		readOutsideTemp(buttonPrompt);
+		alert(readOutsideTemp);
+		readTacho = Math.round(rand(0,7500));
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = Math.round(rand(0,7));
+		readInsideTemp = Math.round(rand(-30,90));
+		readCoolingTemp = Math.round(rand(50,130));
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+	*/}
+	
+	/*if(readPrompt == 1){
+		alert(readPrompt);
+		testStr = "Speed|41|Temp|22|Button1|1|";
+		var speed = getSubStr(testStr, '|');
+		var temp = getSubStr(testStr, '|');
+		var button = getSubStr(testStr, '|');
+		readSpeed = speed
+		//alert(readSpeed);
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readOutsideTemp = temp
+		//alert(temp);
+		buttonPrompt = button;
+		//alert(button);
+		readOutsideTemp(buttonPrompt);
+		//alert(readOutsideTemp);
+		readTacho = Math.round(rand(0,7500));
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = Math.round(rand(0,7));
+		readInsideTemp = Math.round(rand(-30,90));
+		readCoolingTemp = Math.round(rand(50,130));
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+	}else if(readPrompt == 0){
+		readSpeed = document.getElementById('input').value;
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readTacho = document.getElementById('inputTacho').value;
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = document.getElementById('inputOdo').value;
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = document.getElementById('inputTotalOdo').value;
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = document.getElementById('inputGear').value;
+		readInsideTemp = document.getElementById('inputInTemp').value;
+		readOutsideTemp = document.getElementById('inputOtTemp').value;
+		readCoolingTemp = document.getElementById('inputCoolTemp').value;
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+	}
+	*/
+	readButton1 = buttonPrompt;
+	readButtonTacho = buttonTacho;
+	readButtonTemp = buttonTemp;
+	
+}
+//speedometer
+function filter(targetVal){
+	tempValue = targetVal;
+	var constSmooth = smoothing / timeConst;
+	var filterVal = curValue + (targetVal - curValue) / constSmooth;
+	curValue = filterVal;
+	return filterVal;
+}
+function drawSpeedometer(){
+	var bg = document.getElementById("speedBG");
+	var num = document.getElementById("speedNum");
+	var mid = document.getElementById("speedMid");
+	ctx.drawImage(bg, canvas.width*0.60, canvas.height*0.10, 500, 500);
+	ctx.drawImage(num, canvas.width*0.60, canvas.height*0.10, 500, 500);
+	ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, 500, 500);
+}
+function DO(count,callback){ 
+	while (count--) {
+		callback(count); 
+	}
+}
+const sprites = [];
+DO(1,()=>{
+    sprites.push({
+       x : rand(w), y : rand(h),
+       xr : 0, yr : 0, // actual position of sprite
+       r : (Math.PI * 2),
+       scale : 1,
+       dr : 0.1,
+    });
+});
+function displaySpeed(degree){
+	ctx.fillStyle = '#000';
+	ctx.textAlign = 'center'; 
+	ctx.font = gaigeFont.toString()+"px "+fontFam;
+	ctx.fillText(degree,canvas.width*0.60 + gaigeW/2, canvas.height*0.10 +gaigeW*0.53);
+}
+function drawArrowSpeedKM(image, spr){
+	var bg = document.getElementById("speedBG");
+	var num = document.getElementById("speedNumKM");
+	var mid = document.getElementById("speedMid");
+	var ring = document.getElementById("speedRing");
+	var glass = document.getElementById("speedGlass");
+	ctx.drawImage(bg, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.save();
+	ctx.setTransform(spr.scale, 0, 1, 0, spr.xr, spr.yr);
+	ctx.translate(canvas.width*0.60+ gaigeW/2 , canvas.height*0.10+gaigeW*0.496);
+	ctx.rotate(spr.r);
+	ctx.drawImage(image, -image.width / 2, 0);
+	ctx.restore();
+	ctx.drawImage(num, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	if(isValidSpeed == 0){
+		displaySpeed("--");
+	}else{
+		if(elapsedTime()==1){
+			tempSleepVal = tempValue;
+			displaySpeed(tempValue);
+		}else{
+			displaySpeed(tempSleepVal);
+		}
+	}
+	ctx.drawImage(ring, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(glass, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+}
+function drawArrowSpeedMPH(image, spr){
+	var bg = document.getElementById("speedBG");
+	var num = document.getElementById("speedNumMPH");
+	var mid = document.getElementById("speedMid");
+	var ring = document.getElementById("speedRing");
+	var glass = document.getElementById("speedGlass");
+	ctx.drawImage(bg, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.save();
+	ctx.setTransform(spr.scale, 0, 1, 0, spr.xr, spr.yr);
+	ctx.translate(canvas.width*0.60+ gaigeW/2 , canvas.height*0.10+gaigeW*0.496);
+	ctx.rotate(spr.r);
+	ctx.drawImage(image, -image.width / 2, 0);
+	ctx.restore();
+	ctx.drawImage(num, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	if(isValidSpeed == 0){
+		displaySpeed("--");
+	}else{
+		if(elapsedTime()==1){
+			tempSleepVal = tempValue;
+			displaySpeed(tempValue);
+		}else{
+			displaySpeed(tempSleepVal);
+		}
+	}
+	ctx.drawImage(ring, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(glass, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+}
+function checkUnitsKM(){
+	if(readButton1 == 0){
+		//alert(readButton1);
+		changeUnitSpeed();
+		readButton1 = 3;
+		buttonPrompt = 3;
+	}
+	if(unitKM == curUnitKM){
+		if(unitKM == 0){
+			return 0;
+		}else if(unitKM == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitKM == 0){
+			transformUnits(0);
+			curUnitKM=0;
+			return 0;	
+		}else if(unitKM == 1){
+			transformUnits(1);
+			curUnitKM = 1;	
+			return 1;
+		}	
+	}
+}
+function calcRotationKM(input){
+	  if(isNaN(input)){
+		  input = failsafeSpeed;
+		  isValidSpeed = 0;
+	  }else{isValidSpeed = 1;}
+	  if(input > 260) {input = 260;}
+	  if(input < 0){input = 0;}
+	  var temp = filter(input);
+	  var rotation;
+	  if(temp >= 0 && temp < 50){
+		  rotation =(temp/0.8425) + 25; 
+	  }else if(temp >= 50 && temp < 100){
+		  rotation = (temp/0.8325) + 25; 
+	  }else if(temp >= 100 && temp < 140){
+		  rotation = (temp/0.8425) + 25; 
+	  }else if(temp >= 140 && temp < 170){
+		  rotation = (temp/0.8425) + 25; 
+	  }else if(temp >= 170 && temp < 220){
+		  rotation = (temp/0.84) + 25; 
+	  }else if(temp >= 220 && temp < 260){
+		  rotation = (temp/0.8455) + 25; 
+	  }
+	  else if(temp == 260){
+		  rotation = 332;  
+	  }
+	  return rotation;
+}
+function calcRotationMPH(input){
+	  if(isNaN(input)){
+		  input = failsafeSpeed;
+		  isValidSpeed = 0;
+	  }else{isValidSpeed = 1;}
+	  if(input > 160) {input = 160;}
+	  var temp = filter(input);
+	  var rotation;
+	  if(temp < 100){
+	  	rotation = (temp*1.9725) + 24;
+	  }else if(temp >= 100 && temp < 140){
+		 rotation = (temp*1.9375) + 24;
+	  }else if(temp >=140 && temp < 160){
+	  	 rotation = (temp*1.9275) + 24;	
+	  }else if(temp >= 160){
+		 rotation = (temp*1.9275) + 24;  
+	  }
+	  return rotation;
+}
+function transformUnits(units){
+	//units: 0 => km->m, 1 => m->km
+	var input = document.getElementById('input').value;
+	var inputOdo = document.getElementById('inputOdo').value;
+	if(units == 1){
+		curValue = curValue*1.609344;
+		curOdo = curOdo*1.609344;
+		totalOdo = totalOdo*1.609344;
+		document.getElementById('input').value = input*1.609344;
+		document.getElementById('inputOdo').value = inputOdo*1.609344;
+		
+		
+		curValue = Math.round(curValue);
+		curOdo = Math.round(curOdo);
+		totalOdo = Math.round(totalOdo);
+		input = document.getElementById('input').value;
+		inputOdo = document.getElementById('inputOdo').value;
+		input = Math.round(input);
+		inputOdo = Math.round(inputOdo);
+		document.getElementById('input').value = input;
+		document.getElementById('inputOdo').value = inputOdo;
+		document.getElementById('inputTotalOdo').value = totalOdo;
+	}else if(units == 0){
+		curValue = curValue/1.609344;
+		curOdo = curOdo/1.609344;
+		totalOdo = totalOdo/1.609344;
+		document.getElementById('input').value = input/1.609344;
+		document.getElementById('inputOdo').value = inputOdo/1.609344;
+		
+		
+		curValue = Math.round(curValue);
+		curOdo = Math.round(curOdo);
+		totalOdo = Math.round(totalOdo);
+		input = document.getElementById('input').value;
+		inputOdo = document.getElementById('inputOdo').value;
+		input = Math.round(input);
+		inputOdo = Math.round(inputOdo);
+		document.getElementById('input').value = input;
+		document.getElementById('inputOdo').value = inputOdo;
+		document.getElementById('inputTotalOdo').value = totalOdo;
+	}
+}
+function changeUnitSpeed(){
+	if(unitKM == 0){
+		unitKM = 1;
+	}else if(unitKM == 1){
+		unitKM = 0;	
+	}
+}
+//tachometer
+const spritesTacho = [];
+DO(1,()=>{
+    spritesTacho.push({
+       x : rand(w), y : rand(h),
+       xr : 0, yr : 0, // actual position of sprite
+       r : (Math.PI * 2),
+       scale : 1,
+       dr : 0.1,
+    });
+});
+function filterTacho(targetVal){
+	tempValueTach = targetVal;
+	var constSmooth = smoothing / timeConst;
+	var filterVal = curValueTach + (targetVal - curValueTach) / constSmooth;
+	curValueTach = filterVal;
+	return filterVal;
+}
+function drawTachometer(){
+	var bg = document.getElementById("tachoBG");
+	var num = document.getElementById("tachoNumTDI");
+	var mid = document.getElementById("tachoMid");
+	ctx.drawImage(bg, canvas.width*0.20, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(num, canvas.width*0.20, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.20, canvas.height*0.10, gaigeW, gaigeW);
+}
+function drawArrowTachoBen(image, spr){
+	var bg = document.getElementById("tachoBG");
+	var num = document.getElementById("tachoNumBen");
+	var mid = document.getElementById("tachoMid");
+	var ring = document.getElementById("speedRing");
+	var glass = document.getElementById("speedGlass");
+	ctx.drawImage(bg, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.save();
+	ctx.setTransform(spr.scale, 0, 1, 0, spr.xr, spr.yr);
+	ctx.translate(canvas.width*0.05+ gaigeW*0.5 , canvas.height*0.10+gaigeW*0.496);
+	ctx.rotate(spr.r);
+	ctx.drawImage(image, -image.width / 2, 0);
+	ctx.restore();
+	ctx.drawImage(num, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	if(isValidTacho == 0){
+		displayTacho("--");
+	}else{
+		if(elapsedTimeTacho()==1){
+			tempSleepValTach = actTach;
+			displayTacho(actTach);
+		}else{
+			displayTacho(tempSleepValTach);
+		}
+	}
+	ctx.drawImage(ring, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(glass, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+}
+function drawArrowTachoTDI(image, spr){
+	var bg = document.getElementById("tachoBG");
+	var num = document.getElementById("tachoNumTDI");
+	var mid = document.getElementById("tachoMid");
+	var ring = document.getElementById("speedRing");
+	var glass = document.getElementById("speedGlass");
+	ctx.drawImage(bg, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.save();
+	ctx.setTransform(spr.scale, 0, 1, 0, spr.xr, spr.yr);
+	ctx.translate(canvas.width*0.05+ gaigeW*0.5 , canvas.height*0.10+gaigeW*0.496);
+	ctx.rotate(spr.r);
+	ctx.drawImage(image, -image.width / 2, 0);
+	ctx.restore();
+	ctx.drawImage(num, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	if(isValidTacho == 0){
+		displayTacho("--");
+	}else{
+		if(elapsedTimeTacho()==1){
+			tempSleepValTach = actTach;
+			displayTacho(actTach);
+		}else{
+			displayTacho(tempSleepValTach);
+		}
+	}
+	ctx.drawImage(ring, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(glass, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+}
+function displayTacho(degree){
+	ctx.fillStyle = '#000';
+	ctx.textAlign = 'center';
+	ctx.font = gaigeFont.toString()+"px "+fontFam;
+	ctx.fillText(degree,canvas.width*0.05 + gaigeW*0.49, canvas.height*0.10 +gaigeW*0.53);
+}
+function calcRotationBen(input){
+	  if(isNaN(input)){
+		  input = failsafeTacho;
+		  isValidTacho = 0;
+	  }else{isValidTacho = 1;}
+	  if(input > 7500) {input = 7500;}
+	  actTach = input;
+	  input = input / 100;
+	  var temp = filterTacho(input);
+	  var rotation;
+	  if(temp >= 0 && temp <= 10){
+		  rotation =(temp*3.943) + 34; 
+	  }else if(temp > 10 && temp <= 20){
+		  rotation =(temp*3.873) + 34;  
+	  }else if(temp > 20 && temp < 30){
+		  rotation =(temp*3.893) + 34;  
+	  }else if(temp >= 30 && temp < 39){
+		  rotation =(temp*3.923) + 34;  
+	  }else if(temp >= 39 && temp < 50){
+		  rotation =(temp*3.853) + 34;  
+	  }else if(temp >= 50 && temp < 60){
+		  rotation =(temp*3.823) + 34;  
+	  }else if(temp >= 60 && temp < 75){
+		  rotation =(temp*3.813) + 34;  
+	  }else if(temp >= 75){
+		  rotation =(temp*3.873) + 34;  
+	  }
+	  return rotation;
+}
+function calcRotationTDI(input){
+	  if(isNaN(input)){
+		  input = failsafeTacho;
+		  isValidTacho = 0;
+	  }else{isValidTacho = 1;}
+	  if(input > 6000) {input = 6000;}
+	  actTach = input;
+	  input = input / 100;
+	  var temp = filterTacho(input);
+	  var rotation;
+	  if(temp >= 0 && temp <= 10){
+		  rotation =(temp*4.7617) + 34; 
+	  }else if(temp > 10 && temp <= 20){
+		  rotation =(temp*4.7617) + 34;  
+	  }else if(temp >= 20 && temp < 30){
+		  rotation =(temp*4.8317) + 34;  
+	  }else if(temp >= 30 && temp <= 40){
+		  rotation =(temp*4.7817) + 34;  
+	  }else if(temp > 40 && temp < 50){
+		  rotation =(temp*4.7617) + 34;  
+	  }else if(temp >= 50 && temp < 60){
+		  rotation =(temp*4.7217) + 34;  
+	  }else if(temp >= 60){
+		  rotation =(temp*4.7217) + 34;  
+	  }
+	  return rotation;
+}
+function checkEngine(){
+	if(readButtonTacho == 1){
+		changeUnitTacho();
+		readButtonTacho = 0;
+		buttonTacho = 0;
+	}
+	if(unitBen == curUnitBen){
+		if(unitBen == 0){
+			return 0;
+		}else if(unitBen == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitBen == 0){
+			curUnitBen=0;
+			return 0;	
+		}else if(unitBen == 1){
+			curUnitBen = 1;	
+			return 1;
+		}
+	}
+}
+function changeUnitTacho(){
+	if(unitBen == 0){
+		unitBen = 1;
+	}else if(unitBen == 1){
+		unitBen = 0;	
+	}
+}
+//odometer
+function displayOdometerKM(curOdo, totalOdo){
+	if(failOdo == 1){
+		 curOdo = "--";
+	}
+	if(failOdoTot == 1){
+		totalOdo = "--";
+	}
+	var bg = document.getElementById("odometerKM");
+	ctx.drawImage(bg, canvas.width*0.41, canvas.height*0.10, odoW, odoH);
+	displayOdoSpeed(curOdo, totalOdo);
+}
+function displayOdometerMPH(curOdo, totalOdo){
+	if(failOdo == 1){
+		 curOdo = "--";
+	}
+	if(failOdoTot == 1){
+		totalOdo = "--";
+	}
+	var bg = document.getElementById("odometerMPH");
+	ctx.drawImage(bg, canvas.width*0.41, canvas.height*0.10, odoW, odoH);
+	displayOdoSpeed(curOdo, totalOdo);
+}
+function displayOdoSpeed(run, total){
+	var glass = document.getElementById("odometerGlass");
+	ctx.fillStyle = '#FFF';
+	ctx.textAlign = 'left';
+	ctx.textAlign = 'center'; 
+    ctx.font = odoFont.toString()+"px "+fontFam;
+	ctx.fillText(run,canvas.width*0.41 + odoW - odoW/2, canvas.height*0.10 + odoH/2 - odoH/8.5);	
+	ctx.fillText(total,canvas.width*0.41 + odoW - odoW/2, canvas.height*0.10 + odoH/2 + odoH/4.5);	
+	ctx.drawImage(glass, canvas.width*0.41, canvas.height*0.10, odoW, odoH);
+}
+function checkNull(){
+	if(readButton1 == 2){
+		curOdo = 0;
+		document.getElementById('inputOdo').value = 0;
+		readButton1 = 3;
+		buttonPrompt = 3;
+	}
+}
+function checkOdo(run, total){
+	failOdo = 0;
+	failOdoTot = 0;
+	curOdo = run;
+	totalOdo = total;
+	checkNull();
+	if(!curOdo){curOdo = failsafeOdo; failOdo = 1;}
+	if(!totalOdo){totalOdo = failsafeOdo; failOdoTot = 1;}
+	if(isNaN(curOdo)){curOdo = failsafeOdo; failOdo = 1;}
+	if(isNaN(totalOdo)){totalOdo = failsafeOdo; failOdoTot = 1;}
+	if(totalOdo > 999999){
+		totalOdo=999999;	
+	}
+	if(document.getElementById('inputTotalOdo').value > 999999){
+		document.getElementById('inputTotalOdo').value = 999999;
+	}
+	if(curOdo > 999999){
+		curOdo=999999;	
+	}
+	if(document.getElementById('inputOdo').value > 999999){
+		document.getElementById('inputOdo').value = 999999;
+	}
+	if(totalOdo < 0) {totalOdo = 0;}
+	if(document.getElementById('inputTotalOdo').value < 0){
+		document.getElementById('inputTotalOdo').value = 0;
+	}
+	if(curOdo < 0){curOdo = 0;}
+	if(document.getElementById('inputOdo').value < 0){
+		document.getElementById('inputOdo').value  = 0;
+	}
+	
+	readOdo = curOdo;
+	readOdoTotal = totalOdo;
+	document.getElementById('inputOdo').value  = curOdo;
+	document.getElementById('inputTotalOdo').value = totalOdo;
+}
+//outsideTemp
+function displayOutsideTempCelsius(input){
+	var bg = document.getElementById("outsideTemp");
+	var glass = document.getElementById("tempGlass");
+	ctx.drawImage(bg, canvas.width*0.205, canvas.height*0.76, tempW, tempH);
+	var color = '#FFF';
+	curTemp = input;
+	if(isNaN(input)){
+		var temp = '--';
+		ctx.fillStyle = color;
+		ctx.textAlign = 'center'; 
+    	ctx.font = odoFont.toString()+"px "+fontFam;
+		ctx.fillText(temp ,canvas.width*0.2 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);	
+	}else{
+		if(input > 85){
+			input = 85;	
+		}
+		if(input < -40){
+			input = -40;	
+		}
+		input = (Math.round(input * 2) / 2).toFixed(1);
+		if(input - tempTemp > 0){
+			tempGrow = 1;
+		}else if(input - tempTemp < 0){
+			tempGrow = 0;	
+		}
+		if(input >= 5){
+			color = '#D51B1E';	
+		}else if(input <= 3){
+			color = '#7896DB';	
+		}else if(input > 3 && tempGrow == 1){
+			color = '#7896DB';	
+		}else if(input < 5 && tempGrow == 0){
+			color = '#D51B1E';
+		}
+		tempTemp = input;
+		ctx.fillStyle = color;
+		ctx.textAlign = 'right'; 
+		ctx.font = tempFont.toString()+"px "+fontFam;
+		var display = input.toString() + "°" + tempUnit;
+		ctx.fillText(display ,canvas.width*0.2 + 0.9516*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
+	}
+	ctx.drawImage(glass, canvas.width*0.205, canvas.height*0.76, tempW, tempH);
+}
+function displayOutsideTempFahr(input){
+	var bg = document.getElementById("outsideTemp");
+	var glass = document.getElementById("tempGlass");
+	ctx.drawImage(bg, canvas.width*0.205, canvas.height*0.76, tempW, tempH);
+	var color = '#FFF';
+	curTemp = input;
+	if(isNaN(input)){
+		var temp = '--';
+		ctx.fillStyle = color;
+		ctx.textAlign = 'center'; 
+    	ctx.font = odoFont.toString()+"px "+fontFam;
+		ctx.fillText(temp ,canvas.width*0.2 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);	
+	}else{
+		if(input > 185){
+			input = 85;	
+		}
+		if(input < -40){
+			input = -40;	
+		}
+		input = Math.round(input);
+		if(input - tempTemp > 0){
+			tempGrow = 1;
+		}else if(input - tempTemp < 0){
+			tempGrow = 0;	
+		}
+		if(input >= 41){
+			color = '#D51B1E';	
+		}else if(input <= 37){
+			color = '#7896DB';	
+		}else if(input > 37 && tempGrow == 1){
+			color = '#7896DB';	
+		}else if(input < 41 && tempGrow == 0){
+			color = '#D51B1E';
+		}
+		tempTemp = input;
+		ctx.fillStyle = color;
+		ctx.textAlign = 'right'; 
+		ctx.font = tempFont.toString()+"px "+fontFam;
+		var display = input.toString() + "°" + tempUnit;
+		ctx.fillText(display ,canvas.width*0.2 + 0.9516*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
+	}
+	ctx.drawImage(glass, canvas.width*0.205, canvas.height*0.76, tempW, tempH);
+}
+function transformUnitsTemp(units){
+	//units: 0 => F->c, 1 => c->F
+	if(units == 0){
+		curTemp = (curTemp - 32)/(1.8);
+		curTemp = Math.round(curTemp);
+		tempTemp = (tempTemp - 32)/(1.8);
+		tempTemp = Math.round(tempTemp);
+		document.getElementById('inputOtTemp').value = curTemp;
+	}
+	else if(units == 1){
+		curTemp =  curTemp*1.8 + 32;
+		curTemp = (Math.round(curTemp * 2) / 2).toFixed(1);
+		tempTemp = tempTemp*1.8 + 32;
+		tempTemp = (Math.round(tempTemp * 2) / 2).toFixed(1);
+		document.getElementById('inputOtTemp').value = curTemp;
+	}
+}
+function checkUnitsTemp(){
+	if(readButton1 == 1){
+		changeUnitTemp();
+		readButton1 = 3;
+		buttonPrompt = 3;
+	}
+	if(unitTemp == curUnitTemp){
+		if(unitTemp == 0){
+			return 0;
+		}else if(unitTemp == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitTemp == 0){
+			transformUnitsTemp(0);
+			curUnitTemp=0;
+			return 0;	
+		}else if(unitTemp == 1){
+			transformUnitsTemp(1);
+			curUnitTemp = 1;	
+			return 1;
+		}
+	}
+}
+function changeUnitTemp(){
+	if(unitTemp == 0){
+		unitTemp = 1;
+	}else if(unitTemp == 1){
+		unitTemp = 0;	
+	}
+}
+//innerTemp
+function checkUnitsTempInside(){
+	if(readButtonTemp == 1){
+		changeUnitTempIn();
+		readButtonTemp = 0;
+		buttonTemp = 0;
+	}
+	if(unitTempIn == curUnitTempIn){
+		if(unitTempIn == 0){
+			return 0;
+		}else if(unitTempIn == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitTempIn == 0){
+			transformUnitsTempIn(0);
+			curUnitTempIn=0;
+			return 0;	
+		}else if(unitTempIn == 1){
+			transformUnitsTempIn(1);
+			curUnitTempIn = 1;	
+			return 1;
+		}
+	}
+}
+function transformUnitsTempIn(units){
+	//units: 0 => F->c, 1 => c->F
+	if(units == 0){
+		curTempIn = (curTempIn - 32)/(1.8);
+		curTempIn = Math.round(curTempIn);
+		document.getElementById('inputInTemp').value = curTempIn;
+	}
+	else if(units == 1){
+		curTempIn =  curTempIn*1.8 + 32;
+		curTempIn = (Math.round(curTempIn * 2) / 2).toFixed(1);
+		document.getElementById('inputInTemp').value = curTempIn;
+	}
+}
+function changeUnitTempIn(){
+	if(unitTempIn == 0){
+		unitTempIn = 1;
+	}else if(unitTempIn == 1){
+		unitTempIn = 0;	
+	}
+}
+function displayInsideTempCelsius(input){
+	var bg = document.getElementById("insideTemp");
+	ctx.drawImage(bg, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
+	var glass = document.getElementById("tempGlass");
+	var color = '#FFF';
+	curTempIn = input;
+	if(isNaN(input)){
+		var temp = '--';
+		ctx.fillStyle = color;
+		ctx.textAlign = 'center'; 
+    	ctx.font = odoFont.toString()+"px "+fontFam;
+		ctx.fillText(temp ,canvas.width*0.62 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);
+	}else{
+		if(input > 85){
+			input = 85;	
+		}
+		if(input < -40){
+			input = -40;	
+		}
+		input = (Math.round(input * 2) / 2).toFixed(1);
+		ctx.fillStyle = color;
+		ctx.textAlign = 'right'; 
+		ctx.font = tempFont.toString()+"px "+fontFam;
+		var display = input.toString() + "°" + tempUnitInside;
+		ctx.fillText(display ,canvas.width*0.62 + 0.9216*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
+	}
+	ctx.drawImage(glass, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
+}
+function displayInsideTempFahr(input){
+	var bg = document.getElementById("insideTemp");
+	ctx.drawImage(bg, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
+	var glass = document.getElementById("tempGlass");
+	var color = '#FFF';
+	curTempIn = input;
+	if(isNaN(input)){
+		var temp = '--';
+		ctx.fillStyle = color;
+		ctx.textAlign = 'center'; 
+    	ctx.font = odoFont.toString()+"px "+fontFam;
+		ctx.fillText(temp ,canvas.width*0.62 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);
+	}else{
+		if(input > 185){
+			input = 85;	
+		}
+		if(input < -40){
+			input = -40;	
+		}
+		input = Math.round(input);
+		ctx.fillStyle = color;
+		ctx.textAlign = 'right'; 
+		ctx.font = tempFont.toString()+"px "+fontFam;
+		var display = input.toString() + "°" + tempUnitInside;
+		ctx.fillText(display ,canvas.width*0.62 + 0.9216*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
+	}
+	ctx.drawImage(glass, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
+}
+//coolingTemp
+function filterTemp(targetVal){
+	var constSmooth = smoothing / timeConst;
+	var filterVal = curCoolingTemp + (targetVal - curCoolingTemp) / constSmooth;
+	curCoolingTemp = filterVal;
+	return filterVal;
+}
+function calcCoolingTemp(input){
+	if(isNaN(input)){
+		input=failsafeCoolingTemp;	
+	}
+	if(input > 130){input = 130;}
+	if(input < 50){input = 50;}
+	var temp = filterTemp(input);
+	return temp;
+}
+function displayCoolingTemp(barT){
+	var bg = document.getElementById("coolingTempBG");
+	var bar = document.getElementById("coolingTempBar");
+	var indic = document.getElementById("coolingTempIndic");
+	var glass = document.getElementById("coolingTempGlass");
+	var coef = 0;
+	var barW = Math.round(coolW*0.7385);
+	//var bonCoef = Math.round(barW*0.025‬);
+	ctx.drawImage(bg, canvas.width*0.36, canvas.height*0.76, coolW, coolH);
+	ctx.drawImage(bar, canvas.width*0.36, canvas.height*0.76, coolW, coolH);
+	var bonCoef = Math.round(0.085*coolH);
+	coef = (barT/130)*barW+bonCoef;
+	ctx.fillStyle = "rgba(255, 255, 255, 0)";
+	ctx.fillRect(canvas.width*0.36+0.1231*coolW, canvas.height*0.76+0.0369*coolW,coef,0.6714*coolH);
+	ctx.fillStyle = "rgba(0, 0, 0, 1)";
+	ctx.fillRect(canvas.width*0.36+0.0369*coolW+coef,canvas.height*0.76+0.0369*coolW,barW+bonCoef-coef,0.6714*coolH);
+	ctx.drawImage(indic, canvas.width*0.36, canvas.height*0.76, coolW, coolH);
+	ctx.drawImage(glass, canvas.width*0.36, canvas.height*0.76, coolW, coolH);
+}
+//gear
+function displayGear(input){
+	var autoGear = ['P','R','N','D','W','S'];
+	var color = '#FFF';
+	var bg = document.getElementById("gear");
+	var glass = document.getElementById("gearGlass");
+	ctx.drawImage(bg, canvas.width*0.42, canvas.height*0.50, gearW, gearH);	
+	ctx.fillStyle = color;
+	ctx.textAlign = 'center'; 
+    ctx.font = gearFont.toString()+"px "+fontFam;
+	if(isNaN(input)){
+		ctx.fillText("Automatic" ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.4, gearW+gearW*0.7272, gearH*0.46);
+		var i;
+		var flag = 0;		
+		for(i=0;i<=6;i++){
+			if(autoGear[i]==input){
+				input = autoGear[i];
+				flag = 1;
+				break;	
+			}
+		}
+		if(flag!=1){input = "--";}
+	}else{
+		ctx.fillText("Manual" ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.4, gearW+gearW*0.7272, gearH*0.46);
+		if(input < 0){
+			input = "--";
+		}
+		if(input > 7){
+			input = "--";		
+		}
+		if(input == 7){
+			input = "R";	
+		}
+	}
+    	ctx.font = gearFontNum.toString()+"px "+fontFam;
+		ctx.fillText(input ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.81, gearW+gearW*0.7272, gearH*0.46);
+		ctx.drawImage(glass, canvas.width*0.42, canvas.height*0.50, gearW, gearH);	
+	}
+	
+//test & misc
+function rand(min,max){
+	return Math.random() * (max ?(max-min) : min) + (max ? min : 0)
+	 }
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
+function elapsedTime(){
+	var now = new Date().getTime();
+	var elapsedTime = now - lastUpdate;
+	if (elapsedTime > sleepConst){
+		lastUpdate = now;
+		return 1;	
+	}
+	else {
+		return 0;
+	}
+}
+function elapsedTimeTacho(){
+	var now = new Date().getTime();
+	var elapsedTime = now - lastUpdateTacho;
+	if (elapsedTime > sleepConst){
+		lastUpdateTacho = now;
+		return 1;	
+	}
+	else {
+		return 0;
+	}
+}
+function stressTest(){
+	var x = document.getElementsByClassName('inputVal');
+	var i = 0;
+	if(testPrompt == 1){
+		for(i=0;i<x.length;i++){
+			x[i].style.display = "none";
+		}
+		testPrompt = 0;
+	}else if(testPrompt == 0){
+		for(i=0;i<x.length;i++){
+			x[i].style.display = "inline";
+		}
+		show = 0;
+		testPrompt = 1;
+	}
+	lastTest = testPrompt;
+}
+function readVIP(){
+	if(readPrompt == 1){
+		readPrompt = 0;
+		//testPrompt = lastTest;
+		//alert(readPrompt);
+	}
+	else if(readPrompt == 0){
+		readPrompt = 1;
+		//testPrompt = 2;
+		//alert(readPrompt);
+	}
+}
+function hideAll(){
+	var x = document.getElementById("buttonVal");
+	var h = document.getElementById("hideButton");
+	var body = document.getElementsByTagName('body')[0];
+	if(hidePrompt == 0){
+		x.style.display = "none"
+		hidePrompt = 1;
+		h.innerHTML = "-";
+		h.style.background="#000";
+		h.style.color="#FFF";
+		h.style.border="0px solid #FFF";
+		body.style.background="#000";
+	}else if(hidePrompt == 1){
+		x.style.display = "inline";
+		hidePrompt = 0;
+		h.innerHTML = "Hide all";
+		body.style.background="#FFF";
+		h.style.background="#f1f1f1";
+		h.style.color="#000";
+		h.style.border="2px solid #000";
+	}
+}
+function elapsedTimeTest(){
+	var now = new Date().getTime();
+	var elapsedTime = now - lastUpdateTest;
+	if (elapsedTime > 100){
+		lastUpdateTest = now;
+		return 1;	
+	}
+	else {
+		return 0;
+	}
+}
+
+
+requestAnimationFrame(update);
+
+//направи клиентелско-сървърна връзка с back-end-а
+//евентуално: почисти малко кода
+</script>
+
+</html>
