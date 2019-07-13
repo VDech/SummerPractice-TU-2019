@@ -322,7 +322,6 @@ function update(){
 		WebSocketTest();
 	}
 	getInputs();
-	checkConversions();
 	ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,w,h);
 	drawBG();
@@ -415,6 +414,7 @@ function getInputs(){
 		readButton1 = buttonPrompt*1;
 		readButtonTacho = buttonTacho*1;
 		readButtonTemp = buttonTemp*1;
+		checkConversions();
 	}
 }
 
