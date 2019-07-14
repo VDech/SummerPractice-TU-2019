@@ -6,9 +6,9 @@
 </head>
 <style>
 #cluster{
+	border:2px solid #000;
 	position:absolute;
 	left:0%;
-	top:5%;
 }
 .element{
 	visibility:hidden;
@@ -29,13 +29,23 @@
 	color: black;
 	border: 2px solid #000;
 }
-body{
-	background:#000;
-	overflow:hidden;
-}
 </style>
 
 <body>
+	<div id="buttonVal">
+    <div class="inputVal">Move Speed Arrow to: <input id="input" class="inputVal">
+    Move Tacho Arrow to: <input id="inputTacho"  class="inputVal">
+    Gear: <input id="inputGear" class="inputVal">
+    Odometer: <input id="inputOdo" class="inputVal"> Total:<input id="inputTotalOdo" class="inputVal"><p></p>
+    Outside Temp: <input id="inputOtTemp" class="inputVal">
+    Cooling Temp: <input id="inputCoolTemp" type="number" class="inputVal">
+    Inside Temp: <input id="inputInTemp" class="inputVal">
+	<div id = "sse">
+        <a href = "javascript:WebSocketTest()">Run WebSocket</a>
+     </div>
+    </div>
+    <div id="butTestText">Button Test</div><button onClick="testButton(1)">Speed</button><button onClick="testButton(2)">Temp</button><button onClick="testButton(3)">NullOdo</button><button onClick="testButtonTacho(1)">Tacho</button><button onClick="testButtonTemp(1)">TempOtbor2</button><button onClick="testStrings()">testString</button><button onClick="stressTest()">Stress Test</button><button onClick="readVIP()">Read From VIP</button></div><button id="hideButton" onclick="hideAll()">Hide all</button>
+     <p></p>
 	<canvas id="cluster">
     	this is a cluster.
     </canvas>
@@ -43,7 +53,6 @@ body{
     <img id="speedNumKM" class="element" src="skorostomer/skorostomernum.png"/>
     <img id="speedNumMPH" class="element" src="skorostomer/skorostomernumMPH.png"/>
     <img id="speedMid" class="element" src="skorostomer/skorostomermid.png"/>
-	<img id="speedMidError" class="element" src="skorostomer/skorostomermidError.png"/>
     <img id="BG" class="element" src="bg.png"/>
 	<img id="over" class="element" src="over.png"/>
 	<img id="shadow" class="element" src="shadow.png"/>
@@ -66,8 +75,6 @@ body{
     <img id="coolingTempBar" class="element" src="coolingTemp/coolingTempBar.png" />
     <img id="coolingTempIndic" class="element" src="coolingTemp/coolingTempIn.png" />
 	<img id="coolingTempGlass" class="element" src="coolingTemp/coolingTempЕffect.png" />
-	<img id="coolingTempBGError" class="element" src="coolingTemp/coolingTempBGError.png" />
-	<img id="coolingTempIndicError" class="element" src="coolingTemp/coolingTempInError.png" />
 </body>
 
 <script type="text/javascript">
@@ -82,15 +89,26 @@ canvas.height = window.innerHeight * hRatio;
 var smoothing = 100;
 var lastUpdate = new Date().getTime();
 var lastUpdateTacho = new Date().getTime();
-var lastUpdateTest = new Date().getTime();
-var fontFam = "Arial";
+var fontFam = 'verdana';
 var timeConst = 7.5; //miliseconds
 
 //test
 var buttonPrompt = 0;
 var buttonTacho = 0;
 var buttonTemp = 0;
-
+function testButton(int){
+	if(int > 3 && int < 0){int = 3;}
+	buttonPrompt = int;
+	//alert(buttonPrompt);	
+}
+function testButtonTacho(int){
+	buttonTacho = int;
+	//alert(buttonPrompt);	
+}
+function testButtonTemp(int){
+	buttonTemp = int;
+	//alert(buttonPrompt);	
+}
 //speedConst
 var tempValue = 0;
 var tempSleepVal = 0;
@@ -123,7 +141,6 @@ var curOdo = 123;
 var failsafeOdo = 0;
 var failOdo = 0;
 var failOdoTot = 0;
-
 //coolingTempConst
 var curCoolingTemp = 50;
 var failsafeCoolingTemp = 50;
@@ -148,42 +165,57 @@ var coolW, coolH;
 var tempW, tempH, tempFont;
 var w,h;
 
-//webSocket
-var lostConnection = 0;
+//
+var hidePrompt = 0;
+var testPrompt = 1;
+var readPrompt = 0;
+var show = 1;
+var lastTest = 1;
+var lastUpdateTest = new Date().getTime();
+
+//it hurts when IP
 function WebSocketTest() {
- var testRec;
-  if ("WebSocket" in window) {
-		//alert("WebSocket is supported by your Browser!");
-		   var ws = new WebSocket("ws://192.168.8.101:8080");
-		   ws.onerror = function() {
-			//alert('error');   
-		   }
-		   ws.onopen = function() { 
-			  //alert("Message is sent...");
-			  lostConnection = 0;
-		   };
-		  ws.onmessage = function (evt) { 
-			 var received_msg = evt.data;
-			 testRec = evt.data;
-			//alert(evt.data);
-			 //alert("testRec:");
-			 //lert(testRec);
-			 setRecieved(testRec);
-			 //alert("Message is received...");
-		  };
-		  ws.onclose = function() { 
-			 //alert("Connection is closed...");	
-			lostConnection = 1;
-		  };
-	   } else {
-		  //alert("WebSocket NOT supported by your Browser!");
-	   }
-}
+      if ("WebSocket" in window) {
+            alert("WebSocket is supported by your Browser!");
+               // Let us open a web socket
+               var ws = new WebSocket("ws://192.168.200.140:8080");
+			   ws.onerror = function() {
+				alert('error');   
+			   }
+               ws.onopen = function() { 
+				  //alert('a');
+                  // Web Socket is connected, send data using send()
+                  //ws.send('Ping');
+                  //alert("Message is sent...");
+               };
+              ws.onmessage = function (evt) { 
+                 var received_msg = evt.data;
+				 recieved = evt.data;
+				 read == 1;
+                 //alert("Message is received...");
+              };
+              ws.onclose = function() { 
+                 // websocket is closed.
+                 alert("Connection is closed...");
+				 read == 0;				 
+              };
+           } else {
+              // The browser doesn't support WebSocket
+              alert("WebSocket NOT supported by your Browser!");
+			  read == 0;
+           }
+        }
 
-function setRecieved(input){
-	recieved = input; 
+var testStr = "Speed|41|Temp|22|Button1|1|"; 
+function testStrings(){
+	var speed = getSubStr(testStr, '|');
+	var temp = getSubStr(testStr, '|');
+	var button = getSubStr(testStr, '|');
+	alert(testStr);
+	alert(speed);
+	alert(temp);
+	alert(button);
 }
-
 function getSubStr(str, delim) {
     var a = str.indexOf(delim);
     if (a == -1)
@@ -197,38 +229,36 @@ function getSubStr(str, delim) {
     //                 ^    ^- length = gap between delimiters
     //                 |- start = just after the first delimiter
 }
-//socket Const
 var readSpeed, readOdo, readOdoTotal, readOutsideTemp, readButton1;
 var readTacho, readGear, readInsideTemp, readCoolingTemp, readButtonTacho, readButtonTemp;
-var recieved, read;
-var testStr = "Speed|41|Temp|22|Button1|1|"; 
-var flagKM = 0;
-var flagC = 0;
-var unitsKM = 0;
-var units0C = 0;
-var readOutsideTempFahr = 0;
-var readSpeedMPH = 0;
-var units0C2 = 0;
-var readInsideTempFahr = 0;
-var readOdoMPH = 0;
-var readOdoTotalMPH = 0;
-var unitsBen = 0;
 
+
+var recieved, read;
+//|speed|OutsideTemp|Button1|Tacho|ButtonTacho|InsideTemp|CoolTemp|ButtonTemp|Gear|
 //basic
-function resize(){ w = canvas.width = innerWidth; h = canvas.height = canvas.width*0.50401;;}
+function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight;}
 resize();
 window.addEventListener("resize",resize);
 window.onload = function() {
-	 WebSocketTest();
+	 document.getElementById("input").value=0;
+	 document.getElementById("inputTacho").value=0;
+	 document.getElementById('inputOdo').value = 0;
+	 document.getElementById('inputTotalOdo').value = 0;
+	 document.getElementById('inputCoolTemp').value = 50;
+	 document.getElementById('inputOtTemp').value = 1;
+	 document.getElementById('inputInTemp').value = 0;
+	 document.getElementById('inputGear').value = 0;
 	 calculateElements();
-	 drawCanvasBasics();
-}
+	 drawCanvasBasics();	
+};
 function drawBG(){
 	 var bg = document.getElementById("BG");
 	 ctx.drawImage(bg, 0, 0, w, h);
 	 
 }
 function drawOver(){
+	// var shadow = document.getElementById("shadow");
+	 //ctx.drawImage(shadow, 0, 0, w, h);
 	 var over = document.getElementById("over");
 	 ctx.drawImage(over, 0, 0, w, h);
 }
@@ -238,106 +268,20 @@ function drawCanvasBasics(){
 	 drawTachometer();
 }
 
-function setString(input){
-	testStr = String(input);
-	//alert(input);
-}
-
 function calcVIP(){
-	//|speed|OutsideTemp|tripOdo|totalOdo|Button1|Tacho|ButtonTacho|InsideTemp|CoolTemp|ButtonTemp|Gear|
-	setString(recieved);
-	//alert("recieved:")
-	//alert(testStr);
-	//testStr = "|41||21||234||1967||0||2500||0||16||80||0||R|";
+	testStr = "a|41|a|25|a|2|";
+	//testStr = recieved;
 	var speed = getSubStr(testStr, '|');
-	var outTemp = getSubStr(testStr, '|');
-	var tripOdo = getSubStr(testStr, '|');
-	var totalTripOdo = getSubStr(testStr, '|');
-	var button1 = getSubStr(testStr, '|');
-	var tacho = getSubStr(testStr, '|');
-	var tachoBut = getSubStr(testStr, '|');
-	var inTemp = getSubStr(testStr, '|');
-	var coolTemp = getSubStr(testStr, '|');
-	var tempBut = getSubStr(testStr, '|');
-	var gear = getSubStr(testStr, '|');
-
-	readSpeed = speed*1;
-	readOutsideTemp = outTemp*1;
-	readOdo = tripOdo*1;
-	readOdoTotal = totalTripOdo*1;
-	buttonPrompt = button1*1;
-	readTacho = tacho*1;
-	buttonTacho = tachoBut*1;
-	readInsideTemp = inTemp*1;
-	readCoolingTemp = coolTemp*1;
-	buttonTemp = tempBut*1;
-	readGear = gear;	
-}
-function checkConversions(){
-	if(buttonPrompt == 1){
-		if(flagKM == 0){
-		//km to m
-			flagKM = 1;
-			unitsKM = 1;
-		}else if(flagKM == 1){
-		//m to km
-			flagKM = 0;
-			unitsKM = 0;
-		}
-		buttonPrompt = 0;
-	}
-	if(buttonPrompt == 2){
-		if(flagC == 0){
-		//0C to 0F
-			flagC = 1;
-			units0C = 1;
-		}else if(flagC == 1){
-		//0F to 0C
-			flagC = 0;
-			units0C = 0;
-		}
-		buttonPrompt = 0;
-	}
-	
-	if(buttonTemp == 1){
-		units0C2 = 1;
-	}else if(buttonTemp == 0){
-		units0C2 = 0;
-	}
-	
-	if(buttonTacho == 1){
-		unitsBen = 1;
-	}else if(buttonTacho == 0){
-		unitsBen = 0;
-	}
-	if(unitsKM == 0){
-		readSpeed = readSpeed*1;
-		readOdo = readOdo*1;
-		readOdoTotal = readOdoTotal*1;
-	}else if(unitsKM == 1){
-		readSpeedMPH = Math.round(readSpeed*0.621371);
-		readOdoMPH = Math.round(readOdo*0.621371);
-		readOdoTotalMPH = Math.round(readOdoTotal*0.621371);
-	}
-	if(units0C == 0){
-		readOutsideTemp = readOutsideTemp*1;
-	}else if(units0C == 1){
-		readOutsideTempFahr = readOutsideTemp*(9/5)+32;
-	}
-	if(units0C2 == 0){
-		readInsideTemp = readInsideTemp*1;
-	}else if(units0C == 1){
-		readInsideTempFahr = readInsideTemp*(9/5)+32;
-	}
-	readTacho = readTacho*1;
+	var temp = getSubStr(testStr, '|');
+	var button = getSubStr(testStr, '|');
+	readSpeed = speed;
+	readOutsideTemp = temp;
+	buttonPrompt = button;
 }
 
 function update(){	
     var ihM,iwM, ihMTc, iwMTc;
 	calculateElements();
-	if(lostConnection == 1){
-		WebSocketTest();
-	}
 	getInputs();
 	ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,w,h);
@@ -347,7 +291,7 @@ function update(){
       var ih = speedArrow.height;
 	  var spr = sprites[0];
 	  var rot;
-	  if(unitsKM == 0){
+	  if(checkUnitsKM() == 1){
 		  rot = calcRotationKM(readSpeed);
 		  spr.r = rot *(Math.PI/180);
 		  spr.xr = ((spr.x % iwM) + iwM) % iwM - iw * spr.scale;
@@ -356,13 +300,13 @@ function update(){
 		  checkOdo(readOdo, readOdoTotal);
 		  displayOdometerKM(readOdo, readOdoTotal);
 	  }else{
-		  rot = calcRotationMPH(readSpeedMPH);
+		  rot = calcRotationMPH(readSpeed);
 		  spr.r = rot *(Math.PI/180);
 		  spr.xr = ((spr.x % iwM) + iwM) % iwM - iw * spr.scale;
 		  spr.yr = ((spr.y % ihM) + ihM) % ihM - ih * spr.scale;
 		  drawArrowSpeedMPH(speedArrow,spr);
-		  checkOdo(readOdoMPH, readOdoTotalMPH);
-		  displayOdometerMPH(readOdoMPH, readOdoTotalMPH);
+		  checkOdo(readOdo, readOdoTotal);
+		  displayOdometerMPH(readOdo, readOdoTotal);
 	  }
     }  
 	if(tachArrow.complete){
@@ -370,7 +314,7 @@ function update(){
       var ih = tachArrow.height;
 	  var spr = spritesTacho[0];
 	  var rot;
-	  if(unitsBen == 0){
+	  if(checkEngine() == 1){
 		  rot = calcRotationBen(readTacho);
 		  spr.r = rot *(Math.PI/180);
 		  spr.xr = ((spr.x % iwMTc) + iwMTc) % iwMTc - iw * spr.scale;
@@ -387,23 +331,31 @@ function update(){
 	var cool = calcCoolingTemp(readCoolingTemp);
 	displayCoolingTemp(cool);
 	displayGear(readGear);
-	if(units0C == 1){
+	if(checkUnitsTemp() == 1){
 		tempUnit = 'F';
-		displayOutsideTempFahr(readOutsideTempFahr);
+		displayOutsideTempFahr(readOutsideTemp);
 	}else{
 		tempUnit = 'C';
 		displayOutsideTempCelsius(readOutsideTemp);
 	}
-	if(units0C2 == 1){
+	if(checkUnitsTempInside() == 1){
 		tempUnitInside = 'F';
-		displayInsideTempFahr(readInsideTempFahr);
+		displayInsideTempFahr(readInsideTemp);
 	}else{
 		tempUnitInside = 'C';
 		displayInsideTempCelsius(readInsideTemp);
 	}
 	drawOver();
+	displayWindowSize();
     requestAnimationFrame(update);
+	
 } 
+function displayWindowSize(){
+	ctx.fillStyle = '#FFF';
+    ctx.font = '10px sans-serif';
+	ctx.fillText(canvas.width, 30, 20);
+	ctx.fillText(canvas.height, 30, 30);
+}
 function calculateElements(){
 	odoW = Math.round(0.1505*w);	
 	odoH = Math.round(0.1821*h);
@@ -421,20 +373,121 @@ function calculateElements(){
 	tempFont = Math.round(0.0167*w)
 }
 function getInputs(){
-	if(elapsedTimeTest()==1){
-		calcVIP();
+	//чете стринг от сървър и въвежда стойностите
+	if(testPrompt == 1){
+		readSpeed = document.getElementById('input').value;
 		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readTacho = document.getElementById('inputTacho').value;
 		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = document.getElementById('inputOdo').value;
 		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = document.getElementById('inputTotalOdo').value;
 		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
-		if(!readCoolingTemp){failsafeCoolingTemp = 50; isValidCool = 0; readCoolingTemp='a';}
-		readButton1 = buttonPrompt*1;
-		readButtonTacho = buttonTacho*1;
-		readButtonTemp = buttonTemp*1;
-		checkConversions();
+		readGear = document.getElementById('inputGear').value;
+		readInsideTemp = document.getElementById('inputInTemp').value;
+		readOutsideTemp = document.getElementById('inputOtTemp').value;
+		readCoolingTemp = document.getElementById('inputCoolTemp').value;
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+		
+	}else if(testPrompt == 0){
+		if(elapsedTimeTest()==1){
+			calcVIP();
+			//readSpeed = Math.round(rand(0,260));
+			if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+			//readTacho = Math.round(rand(0,7500));
+			if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+			//readOdo = Math.round(rand(0,5000));
+			if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+			//readOdoTotal = Math.round(rand(0,5000));
+			if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+			//readGear = Math.round(rand(0,7));
+			//readInsideTemp = Math.round(rand(-30,90));
+			//readOutsideTemp = Math.round(rand(-30,90));
+			//readCoolingTemp = Math.round(rand(50,130));
+			if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+		}
+		if(show == 0){
+			show = 1;
+			document.getElementById('input').value = readSpeed;
+			document.getElementById('inputTacho').value = readTacho;
+			document.getElementById('inputOdo').value = readOdo;
+			document.getElementById('inputTotalOdo').value = readOdoTotal;
+			document.getElementById('inputGear').value = readGear;
+			document.getElementById('inputInTemp').value = readInsideTemp;
+			document.getElementById('inputOtTemp').value = readOutsideTemp;
+			document.getElementById('inputCoolTemp').value = readCoolingTemp;	
+		}
+	/*}else if(readPrompt == 1 && testPrompt == 2){
+		var speed = getSubStr(testStr, '|');
+		var temp = getSubStr(testStr, '|');
+		var button = getSubStr(testStr, '|');
+		readSpeed = speed
+		alert(readSpeed);
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readOutsideTemp = temp
+		alert(temp);
+		buttonPrompt = button;
+		alert(button);
+		readOutsideTemp(buttonPrompt);
+		alert(readOutsideTemp);
+		readTacho = Math.round(rand(0,7500));
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = Math.round(rand(0,7));
+		readInsideTemp = Math.round(rand(-30,90));
+		readCoolingTemp = Math.round(rand(50,130));
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+	*/}
+	
+	/*if(readPrompt == 1){
+		alert(readPrompt);
+		testStr = "Speed|41|Temp|22|Button1|1|";
+		var speed = getSubStr(testStr, '|');
+		var temp = getSubStr(testStr, '|');
+		var button = getSubStr(testStr, '|');
+		readSpeed = speed
+		//alert(readSpeed);
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readOutsideTemp = temp
+		//alert(temp);
+		buttonPrompt = button;
+		//alert(button);
+		readOutsideTemp(buttonPrompt);
+		//alert(readOutsideTemp);
+		readTacho = Math.round(rand(0,7500));
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = Math.round(rand(0,5000));
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = Math.round(rand(0,7));
+		readInsideTemp = Math.round(rand(-30,90));
+		readCoolingTemp = Math.round(rand(50,130));
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
+	}else if(readPrompt == 0){
+		readSpeed = document.getElementById('input').value;
+		if(!readSpeed){failsafeSpeed = 0; isValidSpeed = 0; readSpeed = 'a';}
+		readTacho = document.getElementById('inputTacho').value;
+		if(!readTacho){failsafeTacho = 0; isValidTacho = 0; readTacho = 'a';}
+		readOdo = document.getElementById('inputOdo').value;
+		if(!readTacho){failsafeOdo = 0; readOdo = 'a';}
+		readOdoTotal = document.getElementById('inputTotalOdo').value;
+		if(!readTacho){failsafeOdo = 0; readOdoTotal = 'a';}
+		readGear = document.getElementById('inputGear').value;
+		readInsideTemp = document.getElementById('inputInTemp').value;
+		readOutsideTemp = document.getElementById('inputOtTemp').value;
+		readCoolingTemp = document.getElementById('inputCoolTemp').value;
+		if(!readCoolingTemp){failsafeCoolingTemp = 50; readCoolingTemp='a';}
 	}
+	*/
+	readButton1 = buttonPrompt;
+	readButtonTacho = buttonTacho;
+	readButtonTemp = buttonTemp;
+	
 }
-
 //speedometer
 function filter(targetVal){
 	tempValue = targetVal;
@@ -468,7 +521,6 @@ DO(1,()=>{
 });
 function displaySpeed(degree){
 	ctx.fillStyle = '#000';
-	if(degree == "--"){	ctx.fillStyle = '#FFF';}
 	ctx.textAlign = 'center'; 
 	ctx.font = gaigeFont.toString()+"px "+fontFam;
 	ctx.fillText(degree,canvas.width*0.60 + gaigeW/2, canvas.height*0.10 +gaigeW*0.53);
@@ -487,17 +539,14 @@ function drawArrowSpeedKM(image, spr){
 	ctx.drawImage(image, -image.width / 2, 0);
 	ctx.restore();
 	ctx.drawImage(num, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 	if(isValidSpeed == 0){
-		mid = document.getElementById("speedMidError");
-		ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 		displaySpeed("--");
 	}else{
 		if(elapsedTime()==1){
-			ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 			tempSleepVal = tempValue;
 			displaySpeed(tempValue);
 		}else{
-			ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 			displaySpeed(tempSleepVal);
 		}
 	}
@@ -518,30 +567,53 @@ function drawArrowSpeedMPH(image, spr){
 	ctx.drawImage(image, -image.width / 2, 0);
 	ctx.restore();
 	ctx.drawImage(num, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 	if(isValidSpeed == 0){
-		mid = document.getElementById("speedMidError");
-		ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 		displaySpeed("--");
 	}else{
 		if(elapsedTime()==1){
-			ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 			tempSleepVal = tempValue;
 			displaySpeed(tempValue);
 		}else{
-			ctx.drawImage(mid, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 			displaySpeed(tempSleepVal);
 		}
 	}
 	ctx.drawImage(ring, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 	ctx.drawImage(glass, canvas.width*0.60, canvas.height*0.10, gaigeW, gaigeW);
 }
+function checkUnitsKM(){
+	if(readButton1 == 1){
+		//alert(readButton1);
+		changeUnitSpeed();
+		readButton1 = 0;
+		buttonPrompt = 0;
+	}
+	if(unitKM == curUnitKM){
+		if(unitKM == 0){
+			return 0;
+		}else if(unitKM == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitKM == 0){
+			transformUnits(0);
+			curUnitKM=0;
+			return 0;	
+		}else if(unitKM == 1){
+			transformUnits(1);
+			curUnitKM = 1;	
+			return 1;
+		}	
+	}
+}
 function calcRotationKM(input){
 	  if(isNaN(input)){
 		  input = failsafeSpeed;
 		  isValidSpeed = 0;
 	  }else{isValidSpeed = 1;}
-	  if(input > 260) {input = 0; isValidSpeed = 0;}
-	  if(input < 0){input = 0; isValidSpeed = 0;}
+	  if(input > 260) {input = 260;}
+	  if(input < 0){input = 0;}
 	  var temp = filter(input);
 	  var rotation;
 	  if(temp >= 0 && temp < 50){
@@ -567,8 +639,7 @@ function calcRotationMPH(input){
 		  input = failsafeSpeed;
 		  isValidSpeed = 0;
 	  }else{isValidSpeed = 1;}
-	  if(input > 160) {input = 0; isValidSpeed = 0;}
-	  if(input < 0) {input = 0; isValidSpeed = 0;}
+	  if(input > 160) {input = 160;}
 	  var temp = filter(input);
 	  var rotation;
 	  if(temp < 100){
@@ -581,6 +652,55 @@ function calcRotationMPH(input){
 		 rotation = (temp*1.9275) + 24;  
 	  }
 	  return rotation;
+}
+function transformUnits(units){
+	//units: 0 => km->m, 1 => m->km
+	var input = document.getElementById('input').value;
+	var inputOdo = document.getElementById('inputOdo').value;
+	if(units == 1){
+		curValue = curValue*1.609344;
+		curOdo = curOdo*1.609344;
+		totalOdo = totalOdo*1.609344;
+		document.getElementById('input').value = input*1.609344;
+		document.getElementById('inputOdo').value = inputOdo*1.609344;
+		
+		
+		curValue = Math.round(curValue);
+		curOdo = Math.round(curOdo);
+		totalOdo = Math.round(totalOdo);
+		input = document.getElementById('input').value;
+		inputOdo = document.getElementById('inputOdo').value;
+		input = Math.round(input);
+		inputOdo = Math.round(inputOdo);
+		document.getElementById('input').value = input;
+		document.getElementById('inputOdo').value = inputOdo;
+		document.getElementById('inputTotalOdo').value = totalOdo;
+	}else if(units == 0){
+		curValue = curValue/1.609344;
+		curOdo = curOdo/1.609344;
+		totalOdo = totalOdo/1.609344;
+		document.getElementById('input').value = input/1.609344;
+		document.getElementById('inputOdo').value = inputOdo/1.609344;
+		
+		
+		curValue = Math.round(curValue);
+		curOdo = Math.round(curOdo);
+		totalOdo = Math.round(totalOdo);
+		input = document.getElementById('input').value;
+		inputOdo = document.getElementById('inputOdo').value;
+		input = Math.round(input);
+		inputOdo = Math.round(inputOdo);
+		document.getElementById('input').value = input;
+		document.getElementById('inputOdo').value = inputOdo;
+		document.getElementById('inputTotalOdo').value = totalOdo;
+	}
+}
+function changeUnitSpeed(){
+	if(unitKM == 0){
+		unitKM = 1;
+	}else if(unitKM == 1){
+		unitKM = 0;	
+	}
 }
 //tachometer
 const spritesTacho = [];
@@ -622,17 +742,14 @@ function drawArrowTachoBen(image, spr){
 	ctx.drawImage(image, -image.width / 2, 0);
 	ctx.restore();
 	ctx.drawImage(num, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
+	ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 	if(isValidTacho == 0){
-		mid = document.getElementById("speedMidError");
-		ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 		displayTacho("--");
 	}else{
 		if(elapsedTimeTacho()==1){
-			ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 			tempSleepValTach = actTach;
 			displayTacho(actTach);
 		}else{
-			ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 			displayTacho(tempSleepValTach);
 		}
 	}
@@ -653,18 +770,14 @@ function drawArrowTachoTDI(image, spr){
 	ctx.drawImage(image, -image.width / 2, 0);
 	ctx.restore();
 	ctx.drawImage(num, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
-	
+	ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 	if(isValidTacho == 0){
-		mid = document.getElementById("speedMidError");
-		ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 		displayTacho("--");
 	}else{
 		if(elapsedTimeTacho()==1){
-			ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 			tempSleepValTach = actTach;
 			displayTacho(actTach);
 		}else{
-			ctx.drawImage(mid, canvas.width*0.05, canvas.height*0.10, gaigeW, gaigeW);
 			displayTacho(tempSleepValTach);
 		}
 	}
@@ -673,7 +786,6 @@ function drawArrowTachoTDI(image, spr){
 }
 function displayTacho(degree){
 	ctx.fillStyle = '#000';
-	if(degree == "--"){	ctx.fillStyle = '#FFF';}
 	ctx.textAlign = 'center';
 	ctx.font = gaigeFont.toString()+"px "+fontFam;
 	ctx.fillText(degree,canvas.width*0.05 + gaigeW*0.49, canvas.height*0.10 +gaigeW*0.53);
@@ -683,8 +795,7 @@ function calcRotationBen(input){
 		  input = failsafeTacho;
 		  isValidTacho = 0;
 	  }else{isValidTacho = 1;}
-	  if(input > 7500) {input = 0; isValidTacho = 0;}
-	  if(input < 0) {input = 0; isValidTacho = 0;}
+	  if(input > 7500) {input = 7500;}
 	  actTach = input;
 	  input = input / 100;
 	  var temp = filterTacho(input);
@@ -713,8 +824,7 @@ function calcRotationTDI(input){
 		  input = failsafeTacho;
 		  isValidTacho = 0;
 	  }else{isValidTacho = 1;}
-	  if(input > 6000) {input = 0; isValidTacho = 0;}
-	  if(input < 0) {input = 0; isValidTacho = 0;}
+	  if(input > 6000) {input = 6000;}
 	  actTach = input;
 	  input = input / 100;
 	  var temp = filterTacho(input);
@@ -736,7 +846,36 @@ function calcRotationTDI(input){
 	  }
 	  return rotation;
 }
-
+function checkEngine(){
+	if(readButtonTacho == 1){
+		changeUnitTacho();
+		readButtonTacho = 0;
+		buttonTacho = 0;
+	}
+	if(unitBen == curUnitBen){
+		if(unitBen == 0){
+			return 0;
+		}else if(unitBen == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitBen == 0){
+			curUnitBen=0;
+			return 0;	
+		}else if(unitBen == 1){
+			curUnitBen = 1;	
+			return 1;
+		}
+	}
+}
+function changeUnitTacho(){
+	if(unitBen == 0){
+		unitBen = 1;
+	}else if(unitBen == 1){
+		unitBen = 0;	
+	}
+}
 //odometer
 function displayOdometerKM(curOdo, totalOdo){
 	if(failOdo == 1){
@@ -770,21 +909,49 @@ function displayOdoSpeed(run, total){
 	ctx.fillText(total,canvas.width*0.41 + odoW - odoW/2, canvas.height*0.10 + odoH/2 + odoH/4.5);	
 	ctx.drawImage(glass, canvas.width*0.41, canvas.height*0.10, odoW, odoH);
 }
+function checkNull(){
+	if(readButton1 == 3){
+		curOdo = 0;
+		document.getElementById('inputOdo').value = 0;
+		readButton1 = 0;
+		buttonPrompt = 0;
+	}
+}
 function checkOdo(run, total){
 	failOdo = 0;
 	failOdoTot = 0;
 	curOdo = run;
 	totalOdo = total;
+	checkNull();
 	if(!curOdo){curOdo = failsafeOdo; failOdo = 1;}
 	if(!totalOdo){totalOdo = failsafeOdo; failOdoTot = 1;}
 	if(isNaN(curOdo)){curOdo = failsafeOdo; failOdo = 1;}
 	if(isNaN(totalOdo)){totalOdo = failsafeOdo; failOdoTot = 1;}
-	if(totalOdo > 999999){totalOdo=999999;failOdoTot = 1;}
-	if(curOdo > 999999){curOdo=999999;failOdo = 1;}
-	if(totalOdo < 0) {totalOdo = 0;failOdoTot = 1;}
-	if(curOdo < 0){curOdo = 0;failOdo = 1;}
+	if(totalOdo > 999999){
+		totalOdo=999999;	
+	}
+	if(document.getElementById('inputTotalOdo').value > 999999){
+		document.getElementById('inputTotalOdo').value = 999999;
+	}
+	if(curOdo > 999999){
+		curOdo=999999;	
+	}
+	if(document.getElementById('inputOdo').value > 999999){
+		document.getElementById('inputOdo').value = 999999;
+	}
+	if(totalOdo < 0) {totalOdo = 0;}
+	if(document.getElementById('inputTotalOdo').value < 0){
+		document.getElementById('inputTotalOdo').value = 0;
+	}
+	if(curOdo < 0){curOdo = 0;}
+	if(document.getElementById('inputOdo').value < 0){
+		document.getElementById('inputOdo').value  = 0;
+	}
+	
 	readOdo = curOdo;
 	readOdoTotal = totalOdo;
+	document.getElementById('inputOdo').value  = curOdo;
+	document.getElementById('inputTotalOdo').value = totalOdo;
 }
 //outsideTemp
 function displayOutsideTempCelsius(input){
@@ -800,14 +967,11 @@ function displayOutsideTempCelsius(input){
     	ctx.font = odoFont.toString()+"px "+fontFam;
 		ctx.fillText(temp ,canvas.width*0.2 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);	
 	}else{
-		var flag = 1;
 		if(input > 85){
-			input = 85;
-			flag = 0;
+			input = 85;	
 		}
 		if(input < -40){
-			input = -40;
-			flag = 0;			
+			input = -40;	
 		}
 		input = (Math.round(input * 2) / 2).toFixed(1);
 		if(input - tempTemp > 0){
@@ -825,15 +989,10 @@ function displayOutsideTempCelsius(input){
 			color = '#D51B1E';
 		}
 		tempTemp = input;
+		ctx.fillStyle = color;
 		ctx.textAlign = 'right'; 
 		ctx.font = tempFont.toString()+"px "+fontFam;
 		var display = input.toString() + "°" + tempUnit;
-		if(flag == 0){
-			display = "--";
-			color = "#FFF"
-			ctx.font = odoFont.toString()+"px "+fontFam;
-		}
-		ctx.fillStyle = color;
 		ctx.fillText(display ,canvas.width*0.2 + 0.9516*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
 	}
 	ctx.drawImage(glass, canvas.width*0.205, canvas.height*0.76, tempW, tempH);
@@ -851,14 +1010,11 @@ function displayOutsideTempFahr(input){
     	ctx.font = odoFont.toString()+"px "+fontFam;
 		ctx.fillText(temp ,canvas.width*0.2 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);	
 	}else{
-		var flag = 1;
 		if(input > 185){
-			input = 85;
-			flag = 0;
+			input = 85;	
 		}
 		if(input < -40){
-			input = -40;
-			flag = 0;
+			input = -40;	
 		}
 		input = Math.round(input);
 		if(input - tempTemp > 0){
@@ -876,20 +1032,109 @@ function displayOutsideTempFahr(input){
 			color = '#D51B1E';
 		}
 		tempTemp = input;
+		ctx.fillStyle = color;
 		ctx.textAlign = 'right'; 
 		ctx.font = tempFont.toString()+"px "+fontFam;
 		var display = input.toString() + "°" + tempUnit;
-		if(flag == 0){
-			display = "--";
-			color = "#FFF"
-			ctx.font = odoFont.toString()+"px "+fontFam;
-		}
-		ctx.fillStyle = color;
 		ctx.fillText(display ,canvas.width*0.2 + 0.9516*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
 	}
 	ctx.drawImage(glass, canvas.width*0.205, canvas.height*0.76, tempW, tempH);
 }
+function transformUnitsTemp(units){
+	//units: 0 => F->c, 1 => c->F
+	if(units == 0){
+		curTemp = (curTemp - 32)/(1.8);
+		curTemp = Math.round(curTemp);
+		tempTemp = (tempTemp - 32)/(1.8);
+		tempTemp = Math.round(tempTemp);
+		document.getElementById('inputOtTemp').value = curTemp;
+	}
+	else if(units == 1){
+		curTemp =  curTemp*1.8 + 32;
+		curTemp = (Math.round(curTemp * 2) / 2).toFixed(1);
+		tempTemp = tempTemp*1.8 + 32;
+		tempTemp = (Math.round(tempTemp * 2) / 2).toFixed(1);
+		document.getElementById('inputOtTemp').value = curTemp;
+	}
+}
+function checkUnitsTemp(){
+	if(readButton1 == 2){
+		changeUnitTemp();
+		readButton1 = 0;
+		buttonPrompt = 0;
+	}
+	if(unitTemp == curUnitTemp){
+		if(unitTemp == 0){
+			return 0;
+		}else if(unitTemp == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitTemp == 0){
+			transformUnitsTemp(0);
+			curUnitTemp=0;
+			return 0;	
+		}else if(unitTemp == 1){
+			transformUnitsTemp(1);
+			curUnitTemp = 1;	
+			return 1;
+		}
+	}
+}
+function changeUnitTemp(){
+	if(unitTemp == 0){
+		unitTemp = 1;
+	}else if(unitTemp == 1){
+		unitTemp = 0;	
+	}
+}
 //innerTemp
+function checkUnitsTempInside(){
+	if(readButtonTemp == 1){
+		changeUnitTempIn();
+		readButtonTemp = 0;
+		buttonTemp = 0;
+	}
+	if(unitTempIn == curUnitTempIn){
+		if(unitTempIn == 0){
+			return 0;
+		}else if(unitTempIn == 1){
+			return 1;
+		}
+		
+	}else{
+		if(unitTempIn == 0){
+			transformUnitsTempIn(0);
+			curUnitTempIn=0;
+			return 0;	
+		}else if(unitTempIn == 1){
+			transformUnitsTempIn(1);
+			curUnitTempIn = 1;	
+			return 1;
+		}
+	}
+}
+function transformUnitsTempIn(units){
+	//units: 0 => F->c, 1 => c->F
+	if(units == 0){
+		curTempIn = (curTempIn - 32)/(1.8);
+		curTempIn = Math.round(curTempIn);
+		document.getElementById('inputInTemp').value = curTempIn;
+	}
+	else if(units == 1){
+		curTempIn =  curTempIn*1.8 + 32;
+		curTempIn = (Math.round(curTempIn * 2) / 2).toFixed(1);
+		document.getElementById('inputInTemp').value = curTempIn;
+	}
+}
+function changeUnitTempIn(){
+	if(unitTempIn == 0){
+		unitTempIn = 1;
+	}else if(unitTempIn == 1){
+		unitTempIn = 0;	
+	}
+}
 function displayInsideTempCelsius(input){
 	var bg = document.getElementById("insideTemp");
 	ctx.drawImage(bg, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
@@ -903,24 +1148,17 @@ function displayInsideTempCelsius(input){
     	ctx.font = odoFont.toString()+"px "+fontFam;
 		ctx.fillText(temp ,canvas.width*0.62 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);
 	}else{
-		var flag = 1;
 		if(input > 85){
-			input = 85;
-			flag = 0;
+			input = 85;	
 		}
 		if(input < -40){
-			input = -40;
-			flag = 0;
+			input = -40;	
 		}
 		input = (Math.round(input * 2) / 2).toFixed(1);
 		ctx.fillStyle = color;
 		ctx.textAlign = 'right'; 
 		ctx.font = tempFont.toString()+"px "+fontFam;
 		var display = input.toString() + "°" + tempUnitInside;
-		if(flag == 0){
-			display = "--";
-			ctx.font = odoFont.toString()+"px "+fontFam;
-		}
 		ctx.fillText(display ,canvas.width*0.62 + 0.9216*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
 	}
 	ctx.drawImage(glass, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
@@ -938,24 +1176,17 @@ function displayInsideTempFahr(input){
     	ctx.font = odoFont.toString()+"px "+fontFam;
 		ctx.fillText(temp ,canvas.width*0.62 + 1.3784*tempW, canvas.height*0.76 + tempH*0.8, 1.0784*tempW, 1.0769*tempH);
 	}else{
-		var flag = 1;
 		if(input > 185){
-			input = 85;
-			flag = 0;
+			input = 85;	
 		}
 		if(input < -40){
-			input = -40;
-			flag = 0;
+			input = -40;	
 		}
 		input = Math.round(input);
 		ctx.fillStyle = color;
 		ctx.textAlign = 'right'; 
 		ctx.font = tempFont.toString()+"px "+fontFam;
 		var display = input.toString() + "°" + tempUnitInside;
-		if(flag == 0){
-			display = "--";
-			ctx.font = odoFont.toString()+"px "+fontFam;
-		}
 		ctx.fillText(display ,canvas.width*0.62 + 0.9216*tempW, canvas.height*0.76 + 0.6923*tempH, 1.0784*tempW, 1.0769*tempH);
 	}
 	ctx.drawImage(glass, canvas.width*0.62, canvas.height*0.76, tempW, tempH);
@@ -970,14 +1201,12 @@ function filterTemp(targetVal){
 function calcCoolingTemp(input){
 	if(isNaN(input)){
 		input=failsafeCoolingTemp;	
-		isValidCool = 0;
-	}else{isValidCool = 1;}
-	if(input > 130){input = 50; isValidCool = 0;}
-	if(input < 50){input = 50; isValidCool = 0;}
+	}
+	if(input > 130){input = 130;}
+	if(input < 50){input = 50;}
 	var temp = filterTemp(input);
 	return temp;
 }
-var isValidCool = 0;
 function displayCoolingTemp(barT){
 	var bg = document.getElementById("coolingTempBG");
 	var bar = document.getElementById("coolingTempBar");
@@ -985,10 +1214,7 @@ function displayCoolingTemp(barT){
 	var glass = document.getElementById("coolingTempGlass");
 	var coef = 0;
 	var barW = Math.round(coolW*0.7385);
-	if(isValidCool == 0){
-		bar = document.getElementById("coolingTempBGError");
-		indic = document.getElementById("coolingTempIndicError");
-	}
+	//var bonCoef = Math.round(barW*0.025‬);
 	ctx.drawImage(bg, canvas.width*0.36, canvas.height*0.76, coolW, coolH);
 	ctx.drawImage(bar, canvas.width*0.36, canvas.height*0.76, coolW, coolH);
 	var bonCoef = Math.round(0.085*coolH);
@@ -1034,7 +1260,7 @@ function displayGear(input){
 			input = "R";	
 		}
 		if(input == 0){
-			input = "N";	
+			input == "N";	
 		}
 	}
     	ctx.font = gearFontNum.toString()+"px "+fontFam;
@@ -1076,8 +1302,63 @@ function elapsedTimeTacho(){
 		return 0;
 	}
 }
-
-var lastUpdateTest = new Date().getTime();
+function stressTest(){
+	var x = document.getElementsByClassName('inputVal');
+	var body = document.getElementsByTagName('body')[0];
+	var text = document.getElementById('butTestText');
+	var i = 0;
+	if(testPrompt == 1){
+		for(i=0;i<x.length;i++){
+			x[i].style.display = "none";
+			body.style.background="#000";
+			text.style.color = "#FFF";
+		}
+		testPrompt = 0;
+	}else if(testPrompt == 0){
+		for(i=0;i<x.length;i++){
+			x[i].style.display = "inline";
+			body.style.background="#FFF";
+			text.style.color = "#000";
+		}
+		show = 0;
+		testPrompt = 1;
+	}
+	lastTest = testPrompt;
+}
+function readVIP(){
+	if(readPrompt == 1){
+		readPrompt = 0;
+		//testPrompt = lastTest;
+		//alert(readPrompt);
+	}
+	else if(readPrompt == 0){
+		readPrompt = 1;
+		//testPrompt = 2;
+		//alert(readPrompt);
+	}
+}
+function hideAll(){
+	var x = document.getElementById("buttonVal");
+	var h = document.getElementById("hideButton");
+	var body = document.getElementsByTagName('body')[0];
+	if(hidePrompt == 0){
+		x.style.display = "none"
+		hidePrompt = 1;
+		h.innerHTML = "-";
+		h.style.background="#000";
+		h.style.color="#FFF";
+		h.style.border="0px solid #FFF";
+		body.style.background="#000";
+	}else if(hidePrompt == 1){
+		x.style.display = "inline";
+		hidePrompt = 0;
+		h.innerHTML = "Hide all";
+		body.style.background="#FFF";
+		h.style.background="#f1f1f1";
+		h.style.color="#000";
+		h.style.border="2px solid #000";
+	}
+}
 function elapsedTimeTest(){
 	var now = new Date().getTime();
 	var elapsedTime = now - lastUpdateTest;
@@ -1092,6 +1373,9 @@ function elapsedTimeTest(){
 
 
 requestAnimationFrame(update);
+
+//направи клиентелско-сървърна връзка с back-end-а
+//евентуално: почисти малко кода
 </script>
 
 </html>
