@@ -1266,36 +1266,31 @@ function displayGear(input){
 	ctx.textAlign = 'center'; 
     ctx.font = gearFont.toString()+"px "+fontFam;
 	var text;
-	if(!input){
-		text="--";
-		input="--";
+	if(isNaN(input)){
+		text="Automatic";
+		var i;
+		var flag = 0;		
+		for(i=0;i<=6;i++){
+			if(autoGear[i]==input){
+				input = autoGear[i];
+				flag = 1;
+				break;	
+			}
+		}
+		if(flag!=1){input = "--";}
 	}else{
-		if(isNaN(input)){
-			text="Automatic";
-			var i;
-			var flag = 0;		
-			for(i=0;i<=6;i++){
-				if(autoGear[i]==input){
-					input = autoGear[i];
-					flag = 1;
-					break;	
-				}
-			}
-			if(flag!=1){input = "--";}
-		}else{
-			text="Manual";
-			if(input < 0){
-				input = "--";
-			}
-			if(input > 7){
-				input = "--";		
-			}
-			if(input == 7){
-				input = "R";	
-			}
-			if(input == 0){
-				input = "N";	
-			}
+		text="Manual";
+		if(input < 0){
+			input = "--";
+		}
+		if(input > 7){
+			input = "--";		
+		}
+		if(input == 7){
+			input = "R";	
+		}
+		if(input == 0){
+			input = "N";	
 		}
 	}
 	ctx.fillText(text ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.4, gearW+gearW*0.7272, gearH*0.46);
