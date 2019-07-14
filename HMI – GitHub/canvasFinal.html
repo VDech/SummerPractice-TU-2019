@@ -165,9 +165,6 @@ function WebSocketTest() {
 		  ws.onmessage = function (evt) { 
 			 var received_msg = evt.data;
 			 testRec = evt.data;
-			//alert(evt.data);
-			 //alert("testRec:");
-			 //lert(testRec);
 			 setRecieved(testRec);
 			 //alert("Message is received...");
 		  };
@@ -246,8 +243,6 @@ function setString(input){
 function calcVIP(){
 	//|speed|OutsideTemp|tripOdo|totalOdo|Button1|Tacho|ButtonTacho|InsideTemp|CoolTemp|ButtonTemp|Gear|
 	setString(recieved);
-	//alert("recieved:")
-	//alert(testStr);
 	//testStr = "|41||21||234||1967||0||2500||0||16||80||0||R|";
 	var speed = getSubStr(testStr, '|');
 	var outTemp = getSubStr(testStr, '|');
@@ -1010,37 +1005,44 @@ function displayGear(input){
 	ctx.fillStyle = color;
 	ctx.textAlign = 'center'; 
     ctx.font = gearFont.toString()+"px "+fontFam;
-	if(isNaN(input)){
-		ctx.fillText("Automatic" ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.4, gearW+gearW*0.7272, gearH*0.46);
-		var i;
-		var flag = 0;		
-		for(i=0;i<=6;i++){
-			if(autoGear[i]==input){
-				input = autoGear[i];
-				flag = 1;
-				break;	
+	var text;
+	if(!input){
+		text="--";
+		input="--";
+	}else{
+		if(isNaN(input)){
+			text="Automatic";
+			var i;
+			var flag = 0;		
+			for(i=0;i<=6;i++){
+				if(autoGear[i]==input){
+					input = autoGear[i];
+					flag = 1;
+					break;	
+				}
+			}
+			if(flag!=1){input = "--";}
+		}else{
+			text="Manual";
+			if(input < 0){
+				input = "--";
+			}
+			if(input > 7){
+				input = "--";		
+			}
+			if(input == 7){
+				input = "R";	
+			}
+			if(input == 0){
+				input = "N";	
 			}
 		}
-		if(flag!=1){input = "--";}
-	}else{
-		ctx.fillText("Manual" ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.4, gearW+gearW*0.7272, gearH*0.46);
-		if(input < 0){
-			input = "--";
-		}
-		if(input > 7){
-			input = "--";		
-		}
-		if(input == 7){
-			input = "R";	
-		}
-		if(input == 0){
-			input = "N";	
-		}
 	}
-    	ctx.font = gearFontNum.toString()+"px "+fontFam;
-		ctx.fillText(input ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.81, gearW+gearW*0.7272, gearH*0.46);
-		ctx.drawImage(glass, canvas.width*0.42, canvas.height*0.50, gearW, gearH);	
-	}
+	ctx.fillText(text ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.4, gearW+gearW*0.7272, gearH*0.46);
+	ctx.font = gearFontNum.toString()+"px "+fontFam;
+	ctx.fillText(input ,canvas.width*0.42 + gearW/2, canvas.height*0.50 + gearH*0.81, gearW+gearW*0.7272, gearH*0.46);
+	ctx.drawImage(glass, canvas.width*0.42, canvas.height*0.50, gearW, gearH);	
+}
 	
 //test & misc
 function rand(min,max){
