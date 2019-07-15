@@ -50,7 +50,7 @@ class MessagingWorker (threading.Thread):
             data = dataWorker.get()
             if data:
                 speed, temp, odo = data
-                self.broadcast("Speed|%s|Temp|0|Button|0|Tacho|%s|ButtonTacho|0|InsideTemp|0|CoolTemp|%s|ButtonTemp|0|Gear|0|" % (speed, odo, temp))
+                self.broadcast("Speed|%s|OutsideTemp|0|TripOdo|0|TotalOdo|%s|Button1|0|Tacho|0|ButtonTacho|0|InsideTemp|0|CoolTemp|%s|" % (speed, odo, temp))
 
             time.sleep(self.interval)
 

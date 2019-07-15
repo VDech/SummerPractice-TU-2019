@@ -48,7 +48,7 @@ def flush():
 def parse_message(msg):
     data = msg.split('|')
     speed.append((time.time(), float(data[1])))
-    temp.append((time.time(), float(data[13])))
+    temp.append((time.time(), float(data[17])))
     odo.append((time.time(), float(data[7])))
     flush()
 
