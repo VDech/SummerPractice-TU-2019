@@ -1,0 +1,29 @@
+language: java
+jdk:
+- oraclejdk11
+
+dist: xenial
+addons:
+  snaps:
+    - name: aws-cli
+      confinement: classic
+
+before_install:
+  - pip install aws-sam-cli --user
+
+stages:
+  - name: deploy
+    if: branch = master
+
+jobs:
+  include:
+      
+    - stage: deploy
+      script:
+      - mvn package shade:shade
+      - aws --version
+      - sam --version
+      - sam validate
+      - sam package --template-file template.yaml --output-template-file packaged.yaml --s3-bucket $BUCKET_NAME
+      - sam deploy --template-file packaged.yaml --capabilities CAPABILITY_IAM --stack-name $STACK_NAME
+      - aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[].Outputs'

@@ -1,0 +1,95 @@
+{
+  "name": "tusc-ui",
+  "description": "TU Summer Camp Cloud UI",
+  "author": "Petar Vorotnikov",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "./",
+  "main": "public/electron.js",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "dotenv": "^8.0.0",
+    "electron-is-dev": "^1.1.0",
+    "lodash": "^4.17.13",
+    "moment": "^2.24.0",
+    "nconf": "^0.10.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-redux": "^7.1.0",
+    "react-router-dom": "^5.0.1",
+    "reactcss": "^1.2.3",
+    "recharts": "^1.6.2",
+    "redux": "^4.0.3",
+    "redux-logger": "^3.0.6",
+    "redux-thunk": "^2.3.0",
+    "semantic-ui-less": "^2.4.1",
+    "semantic-ui-react": "^0.87.3",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "@craco/craco": "^5.2.3",
+    "@types/history": "^4.7.2",
+    "@types/jest": "24.0.15",
+    "@types/node": "12.6.2",
+    "@types/react": "16.8.23",
+    "@types/react-dom": "16.8.4",
+    "@types/react-redux": "^7.1.1",
+    "@types/react-router-dom": "^4.3.4",
+    "@types/recharts": "^1.1.19",
+    "@types/redux": "^3.6.0",
+    "@types/redux-logger": "^3.0.7",
+    "@types/redux-thunk": "^2.1.0",
+    "concurrently": "^4.1.1",
+    "cpy-cli": "^2.0.0",
+    "craco-less": "^1.9.0",
+    "cross-env": "^5.2.0",
+    "electron": "^5.0.6",
+    "electron-builder": "^20.44.4",
+    "react-scripts": "3.0.1",
+    "typescript": "3.5.3",
+    "wait-on": "^3.2.0"
+  },
+  "scripts": {
+    "react-start": "craco start",
+    "react-build": "craco build",
+    "react-test": "craco test --env=jsdom",
+    "build": "npm run react-build && electron-builder",
+    "release": "npm run react-build && electron-builder --publish=always",
+    "start:electron": "cross-env ELECTRON_DISABLE_SECURITY_WARNINGS=true electron .",
+    "start:react": "cross-env BROWSER=none npm run react-start",
+    "start": "concurrently \"npm run start:react\" \"wait-on http://localhost:3000 && npm run start:electron\""
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "build": {
+    "appId": "com.tusc.ui",
+    "directories": {
+      "output": "bundle"
+    },
+    "linux": {
+      "category": "Development",
+      "target": [
+        {
+          "target": "AppImage"
+        }
+      ]
+    },
+    "appImage": {
+      "systemIntegration": "doNotAsk",
+      "artifactName": "bumblebee.AppImage"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    tusc-sample
+    SAM Template for tusc-sample app
+Globals:
+  Function:
+    Timeout: 30
+    
+Resources:
+
+  DataTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: User
+          AttributeType: S
+        - AttributeName: Time
+          AttributeType: N
+      KeySchema: 
+        - AttributeName: User
+          KeyType: HASH
+        - AttributeName: Time
+          KeyType: RANGE
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  DataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: target/tusc-sample-0.0.1.jar
+      Handler: com.visteoncloud.tusc.sample.LambdaHandler::handleRequest
+      Runtime: java8
+      MemorySize: 1024
+      Policies:
+      - DynamoDBCrudPolicy:
+            TableName: !Ref DataTable
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DataTable
+      Events:
+        PostData:
+          Type: Api
+          Properties:
+            Path: /data
+            Method: post
+        GetData:
+          Type: Api
+          Properties:
+            Path: /data
+            Method: get
+
+Outputs:
+  DataApi:
+    Description: "API Gateway base URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  DataFunction:
+    Description: "Data Lambda Function ARN"
+    Value: !GetAtt DataFunction.Arn
