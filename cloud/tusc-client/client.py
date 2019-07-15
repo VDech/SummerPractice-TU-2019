@@ -3,18 +3,18 @@ import json, math, time, asyncio, websockets, datetime, requests
 # ====================================
 # CONFIGURATION
 # ====================================
-SERVER_URL = "ws://192.168.43.242:8080"
+SERVER_URL = "ws://127.0.0.1:8080"
 SPEED_URL ='https://32mo5c9zs2.execute-api.us-east-1.amazonaws.com/Prod/data'
 TEMP_URL ='https://i90jji9q5j.execute-api.us-east-1.amazonaws.com/Prod/data'
 ODO_URL ='https://g9eyv3jby5.execute-api.us-east-1.amazonaws.com/Prod/data'
-SEND_PERIOD = 5
+SEND_PERIOD = 30
 
 temp = []
 odo = []
 speed = []
 lastSend = 0
 
-def data_filter(data):
+def resample_data(data):
     result_array = []
     temp_array = []
     for time, value in data:
@@ -25,7 +25,7 @@ def data_filter(data):
             temp_array = []
         else:
             temp_array.append((time, value))
-    
+    print(result_array)
     return result_array
 
 def flush():
@@ -34,9 +34,9 @@ def flush():
 
     if abs(lastSend - now) > SEND_PERIOD:
         try:
-            requests.post(SPEED_URL, data=json.dumps(data_filter(speed)))
-            requests.post(TEMP_URL, data=json.dumps(data_filter(temp)))
-            requests.post(ODO_URL, data=json.dumps(data_filter(odo)))
+            requests.post(SPEED_URL, data=json.dumps(resample_data(speed)))
+            requests.post(TEMP_URL, data=json.dumps(resample_data(temp)))
+            requests.post(ODO_URL, data=json.dumps(resample_data(odo)))
             lastSend = now
             temp = []
             odo = []
@@ -48,8 +48,8 @@ def flush():
 def parse_message(msg):
     data = msg.split('|')
     speed.append((time.time(), float(data[1])))
-    temp.append((time.time(), float(data[3])))
-    odo.append((time.time(), float(data[5])))
+    temp.append((time.time(), float(data[13])))
+    odo.append((time.time(), float(data[7])))
     flush()
 
 async def handler():

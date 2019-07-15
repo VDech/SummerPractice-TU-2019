@@ -19,7 +19,10 @@ class DataWorker (threading.Thread):
     def run(self):
         while not stopFlag:
             self.data = self.inc
-            self.inc = random.randrange(2000, 7000) / 10
+            speed = random.randrange(20, 70)
+            temp = random.randrange(20, 30)
+            odo = random.randrange(4000, 40200)
+            self.inc = (speed, temp, odo)
             time.sleep(0.05)
 
     # Data getter
@@ -46,7 +49,8 @@ class MessagingWorker (threading.Thread):
         while not stopFlag:
             data = dataWorker.get()
             if data:
-                self.broadcast("|Speed|%s|Temp|%s|Odo|%s|" % (data, data, data))
+                speed, temp, odo = data
+                self.broadcast("Speed|%s|Temp|0|Button|0|Tacho|%s|ButtonTacho|0|InsideTemp|0|CoolTemp|%s|ButtonTemp|0|Gear|0|" % (speed, odo, temp))
 
             time.sleep(self.interval)
 
@@ -80,7 +84,7 @@ if __name__ == "__main__":
         messagingWorker.start()
 
         # Create server
-        ws_server = websockets.serve(messagingWorker.handler, '0.0.0.0', 4545)
+        ws_server = websockets.serve(messagingWorker.handler, '0.0.0.0', 8080)
 
         # Create async loop
         loop = asyncio.get_event_loop()
